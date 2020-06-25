@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul, Sub, Div, Neg, AddAssign, MulAssign, SubAssign, DivAssign};
 
+use super::utils;
+use rand::prelude::ThreadRng;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
@@ -31,6 +33,44 @@ impl Vec3 {
 
     pub fn unit(&self) -> Vec3 {
         *self / self.len()
+    }
+
+    pub fn reflect(&self, other: Vec3) -> Vec3 {
+        *self - 2.0 * self.dot(&other) * other
+    }
+
+    pub fn random(rng: &mut ThreadRng) -> Vec3 {
+        Vec3::new(utils::random_double(rng), utils::random_double(rng), utils::random_double(rng))
+    }
+
+    pub fn random_unit_vector(rng: &mut ThreadRng) -> Vec3 {
+        let a = utils::random_in_range(rng, 0.0, 2.0 * std::f64::consts::PI);
+        let z = utils::random_in_range(rng, -1.0, 1.0);
+        let r = (1.0 - z*z).sqrt();
+        Vec3::new(r * a.cos(), r * a.sin(), z)
+    }
+
+    pub fn random_in_range(rng: &mut ThreadRng, min: f64, max: f64) -> Vec3 {
+        Vec3::new(utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max))
+    }
+
+    pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
+        let p = loop {
+            let p = Vec3::random_in_range(rng, -1.0, 1.0);
+            if p.dot(&p) >= 1.0 {
+                break p;
+            }
+        };
+        return p
+    }
+
+    pub fn random_in_hemisphere(rng: &mut ThreadRng, normal: &Vec3) -> Vec3 {
+        let in_unit_sphere = Vec3::random_in_unit_sphere(rng);
+        if in_unit_sphere.dot(normal) > 0.0 { // In the same hemisphere as the normal
+            return in_unit_sphere
+        } else {
+            return -in_unit_sphere
+        }
     }
 }
 

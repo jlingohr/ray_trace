@@ -1,5 +1,6 @@
 use std::ops::{Add, Mul, Sub, Div, AddAssign, MulAssign, SubAssign, DivAssign};
 use super::vector::Vec3;
+use super::utils;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
@@ -13,10 +14,20 @@ impl Color {
         Color {r, g, b}
     }
 
-    pub fn write_color(&self) {
-        let ir: u32  = (255.999 * self.r) as u32;
-        let ig: u32 = (255.999 * self.g) as u32;
-        let ib: u32 = (255.999 * self.b) as u32;
+    pub fn write_color(&self, samples_per_pixel: u32) {
+        let mut r = self.r;
+        let mut g = self.g;
+        let mut b = self.b;
+
+        // Divide color total by the samples per pixel
+        let scale = 1.0 / (samples_per_pixel as f64);
+        r = (scale * r).sqrt();
+        g = (scale * g).sqrt();
+        b = (scale * b).sqrt();
+
+        let ir: u32  = (256.0 * utils::clamp(r, 0.0, 0.999)) as u32;
+        let ig: u32 = (256.0 * utils::clamp(g, 0.0, 0.999)) as u32;
+        let ib: u32 = (256.0 * utils::clamp(b, 0.0, 0.999)) as u32;
         println!("{} {} {}", ir, ig, ib)
     }
 }

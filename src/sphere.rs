@@ -1,16 +1,23 @@
 use super::hittable;
 use super::point::Point;
 use super::ray::Ray;
+use super::material::Material;
+use std::rc::Rc;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Sphere {
     pub center: Point,
     pub radius: f64,
+    pub material:  Rc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f64) -> Sphere {
-        Sphere { center, radius }
+    pub fn new(center: Point, radius: f64, material: Rc<dyn Material>) -> Sphere {
+        Sphere {
+            center: center,
+            radius: radius,
+            material: material,
+        }
     }
 }
 
@@ -30,7 +37,7 @@ impl hittable::Hittable for Sphere {
                 let outward_normal = (point - self.center) / self.radius;
                 let front_face = ray.direction.dot(&outward_normal) < 0.0;
                 let normal = if front_face { outward_normal } else { -outward_normal };
-                let hit_record = hittable::HitRecord::new(point, normal, temp, front_face);
+                let hit_record = hittable::HitRecord::new(point, normal, temp, front_face, Rc::clone(&self.material));
                 return Some(hit_record)
             }
             let temp = (-half_b + root) / a;
@@ -39,7 +46,7 @@ impl hittable::Hittable for Sphere {
                 let outward_normal = (point - self.center) / self.radius;
                 let front_face = ray.direction.dot(&outward_normal) < 0.0;
                 let normal = if front_face { outward_normal } else { -outward_normal };
-                let hit_record = hittable::HitRecord::new(point, normal, temp, front_face);
+                let hit_record = hittable::HitRecord::new(point, normal, temp, front_face, Rc::clone(&self.material));
                 return Some(hit_record)
             }
         }
