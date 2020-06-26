@@ -1,6 +1,7 @@
 use super::point::Point;
-use super::vector::Vec3;
 use super::ray::Ray;
+use super::utils;
+use super::vector::Vec3;
 use rand::prelude::ThreadRng;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -13,16 +14,22 @@ pub struct Camera {
     v: Vec3,
     w: Vec3,
     lens_radius: f64,
+    time0: f64,
+    time1: f64,
 }
 
 impl Camera {
-    pub fn new(look_from: Point,
+    pub fn new(
+        look_from: Point,
         look_at: Point,
         view_up: Vec3,
         fov: f64,
         aspect_ratio: f64,
         aperature: f64,
-        focus_dist: f64) -> Camera {
+        focus_dist: f64,
+        time0: f64,
+        time1: f64,
+    ) -> Camera {
         let theta = degrees_to_radians(fov);
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h;
@@ -48,13 +55,21 @@ impl Camera {
             v,
             w,
             lens_radius,
+            time0,
+            time1,
         }
     }
 
     pub fn get_ray(&self, rng: &mut ThreadRng, s: f64, t: f64) -> Ray {
         let rd = self.lens_radius * Vec3::random_in_unit_disk(rng);
         let offset = self.u * rd.x + self.v * rd.y;
-        Ray::new(self.origin + offset, self.lower_left_corner + (s * self.horizontal) + (t * self.vertical) - self.origin - offset)
+        Ray::new(
+            self.origin + offset,
+            self.lower_left_corner + (s * self.horizontal) + (t * self.vertical)
+                - self.origin
+                - offset,
+            utils::random_in_range(rng, self.time0, self.time1),
+        )
     }
 }
 

@@ -1,18 +1,18 @@
-use super::ray::Ray;
-use super::hittable::HitRecord;
 use super::color::Color;
-use super::vector::Vec3;
+use super::hittable::HitRecord;
+use super::ray::Ray;
 use super::utils;
+use super::vector::Vec3;
 use rand::prelude::ThreadRng;
 
 pub struct Scatter {
     pub scattered: Ray,
-    pub albedo: Color
+    pub albedo: Color,
 }
 
 impl Scatter {
     pub fn new(scattered: Ray, albedo: Color) -> Scatter {
-        Scatter { scattered, albedo, }
+        Scatter { scattered, albedo }
     }
 }
 
@@ -31,9 +31,9 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
+    fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
         let scatter_direction = rec.normal + Vec3::random_unit_vector(rng);
-        let scattered = Ray::new(rec.point, scatter_direction);
+        let scattered = Ray::new(rec.point, scatter_direction, ray.time);
         Some(Scatter::new(scattered, self.albedo))
     }
 }
@@ -45,14 +45,18 @@ pub struct Metal {
 
 impl Metal {
     pub fn new(albedo: Color, fuzz: f64) -> Metal {
-        Metal { albedo, fuzz, }
+        Metal { albedo, fuzz }
     }
 }
 
 impl Material for Metal {
     fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
         let reflected = ray.direction.unit().reflect(rec.normal);
-        let scattered = Ray::new(rec.point, reflected + self.fuzz * Vec3::random_in_unit_sphere(rng));
+        let scattered = Ray::new(
+            rec.point,
+            reflected + self.fuzz * Vec3::random_in_unit_sphere(rng),
+            ray.time,
+        );
         if scattered.direction.dot(&rec.normal) > 0.0 {
             Some(Scatter::new(scattered, self.albedo))
         } else {
@@ -67,7 +71,7 @@ pub struct Dielectric {
 
 impl Dielectric {
     pub fn new(ref_idx: f64) -> Dielectric {
-        Dielectric { ref_idx, }
+        Dielectric { ref_idx }
     }
 
     fn schlick(cosine: f64, ref_idx: f64) -> f64 {
@@ -87,16 +91,16 @@ impl Material for Dielectric {
         };
         let unit_direction = ray.direction.unit();
         let cos_theta = f64::min(-unit_direction.dot(&rec.normal), 1.0);
-        let sin_theta = (1.0 - (cos_theta*cos_theta)).sqrt();
+        let sin_theta = (1.0 - (cos_theta * cos_theta)).sqrt();
         let scattered = if etai_over_etat * sin_theta > 1.0 {
             let reflected = unit_direction.reflect(rec.normal);
-            Scatter::new(Ray::new(rec.point, reflected), attenuation)
+            Scatter::new(Ray::new(rec.point, reflected, ray.time), attenuation)
         } else if utils::random_double(rng) < Dielectric::schlick(cos_theta, etai_over_etat) {
             let reflected = unit_direction.reflect(rec.normal);
-            Scatter::new(Ray::new(rec.point, reflected), attenuation)
+            Scatter::new(Ray::new(rec.point, reflected, ray.time), attenuation)
         } else {
             let refracted = unit_direction.refract(rec.normal, etai_over_etat);
-            Scatter::new(Ray::new(rec.point, refracted), attenuation)
+            Scatter::new(Ray::new(rec.point, refracted, ray.time), attenuation)
         };
         Some(scattered)
     }

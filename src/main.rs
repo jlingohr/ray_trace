@@ -1,18 +1,18 @@
-use ray_trace::ray::Ray;
-use ray_trace::vector::Vec3;
-use ray_trace::color::Color;
-use ray_trace::point::Point;
-use ray_trace::hittable;
-use ray_trace::sphere::Sphere;
 use ray_trace::camera::Camera;
+use ray_trace::color::Color;
+use ray_trace::hittable;
+use ray_trace::material::{Dielectric, Lambertian, Metal};
+use ray_trace::point::Point;
+use ray_trace::ray::Ray;
+use ray_trace::sphere::{MovingSphere, Sphere};
 use ray_trace::utils;
-use ray_trace::material::{Lambertian, Metal, Dielectric};
+use ray_trace::vector::Vec3;
 
-use std::rc::Rc;
 use rand::prelude::ThreadRng;
 use std::env;
 use std::fs;
 use std::process;
+use std::rc::Rc;
 
 fn main() {
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
@@ -35,17 +35,27 @@ fn main() {
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
     let aperature = 0.1;
-    let cam = Camera::new(look_from, look_at, view_up, 20.0, ASPECT_RATIO, aperature, dist_to_focus);
+    let cam = Camera::new(
+        look_from,
+        look_at,
+        view_up,
+        20.0,
+        ASPECT_RATIO,
+        aperature,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
 
     let mut image_str: Vec<String> = Vec::new();
     image_str.push(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT));
 
-    for j in (0..IMAGE_HEIGHT).rev(){
+    for j in (0..IMAGE_HEIGHT).rev() {
         for i in 0..IMAGE_WIDTH {
             let mut pixel_color = Color::new(0.0, 0.0, 0.0);
             for _s in 0..SAMPLES_PER_PIXEL {
-                let u = ((i as f64) + utils::random_double(&mut rng)) / (IMAGE_WIDTH-1) as f64;
-                let v = ((j as f64) + utils::random_double(&mut rng)) / (IMAGE_HEIGHT-1) as f64;
+                let u = ((i as f64) + utils::random_double(&mut rng)) / (IMAGE_WIDTH - 1) as f64;
+                let v = ((j as f64) + utils::random_double(&mut rng)) / (IMAGE_HEIGHT - 1) as f64;
                 let r = cam.get_ray(&mut rng, u, v);
                 pixel_color += ray_color(r, &world, MAX_DEPTH, &mut rng);
             }
@@ -56,7 +66,6 @@ fn main() {
     if fs::write(config.filename, image).is_err() {
         eprintln!("Could not generate image");
     }
-
 }
 
 struct Config {
@@ -69,40 +78,52 @@ impl Config {
             return Err("Not enough arguments");
         }
         let filename = args[1].clone();
-        Ok(Config { filename, })
+        Ok(Config { filename })
     }
 }
 
 fn ray_color(r: Ray, world: &dyn hittable::Hittable, depth: u32, rng: &mut ThreadRng) -> Color {
     if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0)
+        return Color::new(0.0, 0.0, 0.0);
     }
     if let Some(hit) = world.hit(&r, 0.001, f64::INFINITY) {
         if let Some(scattered) = hit.material.scatter(r, &hit, rng) {
-            return scattered.albedo * ray_color(scattered.scattered, world, depth-1, rng)
+            return scattered.albedo * ray_color(scattered.scattered, world, depth - 1, rng);
         }
-        return Color::new(0.0, 0.0, 0.0)
+        return Color::new(0.0, 0.0, 0.0);
     }
     let unit_direction = r.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.0);
-    return ((1.0 - t) * Color::new(1.0, 1.0, 1.0)) + t * Color::new(0.5, 0.7, 1.0)
+    return ((1.0 - t) * Color::new(1.0, 1.0, 1.0)) + t * Color::new(0.5, 0.7, 1.0);
 }
 
 fn random_scene(rng: &mut ThreadRng) -> hittable::HittableList {
     let mut world = hittable::HittableList::new();
     let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
-    world.add(Rc::new(Sphere::new(Point::new(0.0, -1000.0, 0.0), 1000.0, ground_material)));
+    world.add(Rc::new(Sphere::new(
+        Point::new(0.0, -1000.0, 0.0),
+        1000.0,
+        ground_material,
+    )));
 
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = utils::random_double(rng);
-            let center = Point::new((a as f64) + (0.9 * utils::random_double(rng)), 0.2, (b as f64) + (0.9 * utils::random_double(rng)));
+            let center = Point::new(
+                (a as f64) + (0.9 * utils::random_double(rng)),
+                0.2,
+                (b as f64) + (0.9 * utils::random_double(rng)),
+            );
             if (center - Point::new(4.0, 0.2, 0.0)).len() > 0.9 {
                 if choose_mat < 0.8 {
                     // diffuse
                     let albedo = Color::random(rng) * Color::random(rng);
                     let material = Rc::new(Lambertian::new(albedo));
-                    world.add(Rc::new(Sphere::new(center, 0.2, material)));
+                    let center2 =
+                        center + Vec3::new(0.0, utils::random_in_range(rng, 0.0, 0.5), 0.0);
+                    world.add(Rc::new(MovingSphere::new(
+                        center, center2, 0.0, 1.0, 0.2, material,
+                    )));
                 } else if choose_mat < 0.95 {
                     // metal
                     let albedo = Color::random_in_range(rng, 0.5, 1.0);
@@ -119,14 +140,25 @@ fn random_scene(rng: &mut ThreadRng) -> hittable::HittableList {
     }
 
     let material1 = Rc::new(Dielectric::new(1.5));
-    world.add(Rc::new(Sphere::new(Point::new(0.0, 1.0, 0.0), 1.0, material1)));
+    world.add(Rc::new(Sphere::new(
+        Point::new(0.0, 1.0, 0.0),
+        1.0,
+        material1,
+    )));
 
     let material2 = Rc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
-    world.add(Rc::new(Sphere::new(Point::new(-4.0, 1.0, 0.0), 1.0, material2)));
+    world.add(Rc::new(Sphere::new(
+        Point::new(-4.0, 1.0, 0.0),
+        1.0,
+        material2,
+    )));
 
     let material3 = Rc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
-    world.add(Rc::new(Sphere::new(Point::new(4.0, 1.0, 0.0), 1.0, material3)));
+    world.add(Rc::new(Sphere::new(
+        Point::new(4.0, 1.0, 0.0),
+        1.0,
+        material3,
+    )));
 
     world
 }
-
