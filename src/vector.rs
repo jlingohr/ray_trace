@@ -27,6 +27,13 @@ impl Vec3 {
         (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
     }
 
+    pub fn cross(&self, other: &Vec3) -> Vec3 {
+        let x = self.y * other.z - self.z * other.y;
+        let y = -self.x * other.z + self.z * other.x;
+        let z = self.x * other.y - self.y * other.x;
+        Vec3::new(x, y, z)
+    }
+
     pub fn len(&self) -> f64 {
         self.dot(self).sqrt()
     }
@@ -78,6 +85,16 @@ impl Vec3 {
         } else {
             return -in_unit_sphere
         }
+    }
+
+    pub fn random_in_unit_disk(rng: &mut ThreadRng) -> Vec3 {
+        let p = loop {
+            let p = Vec3::new(utils::random_in_range(rng, -1.0, 1.0), utils::random_in_range(rng, -1.0, 1.0), 0.0);
+            if p.dot(&p) < 1.0 {
+                break p
+            }
+        };
+        p
     }
 }
 

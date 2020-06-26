@@ -1,6 +1,7 @@
 use std::ops::{Add, Mul, Sub, Div, AddAssign, MulAssign, SubAssign, DivAssign};
 use super::vector::Vec3;
 use super::utils;
+use rand::prelude::ThreadRng;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
@@ -14,7 +15,15 @@ impl Color {
         Color {r, g, b}
     }
 
-    pub fn write_color(&self, samples_per_pixel: u32) {
+    pub fn random(rng: &mut ThreadRng) -> Color {
+        Color::new(utils::random_double(rng), utils::random_double(rng), utils::random_double(rng))
+    }
+
+    pub fn random_in_range(rng: &mut ThreadRng, min: f64, max: f64) -> Color {
+        Color::new(utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max))
+    }
+
+    pub fn write_color(&self, samples_per_pixel: u32) -> String {
         let mut r = self.r;
         let mut g = self.g;
         let mut b = self.b;
@@ -28,7 +37,7 @@ impl Color {
         let ir: u32  = (256.0 * utils::clamp(r, 0.0, 0.999)) as u32;
         let ig: u32 = (256.0 * utils::clamp(g, 0.0, 0.999)) as u32;
         let ib: u32 = (256.0 * utils::clamp(b, 0.0, 0.999)) as u32;
-        println!("{} {} {}", ir, ig, ib)
+        format!("{} {} {}\n", ir, ig, ib)
     }
 }
 

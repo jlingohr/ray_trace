@@ -71,7 +71,7 @@ impl Dielectric {
     }
 
     fn schlick(cosine: f64, ref_idx: f64) -> f64 {
-        let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+        let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
         let r0 = r0 * r0;
         r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
     }
@@ -91,7 +91,7 @@ impl Material for Dielectric {
         let scattered = if etai_over_etat * sin_theta > 1.0 {
             let reflected = unit_direction.reflect(rec.normal);
             Scatter::new(Ray::new(rec.point, reflected), attenuation)
-        } else if utils::random_double(rng) > Dielectric::schlick(cos_theta, etai_over_etat) {
+        } else if utils::random_double(rng) < Dielectric::schlick(cos_theta, etai_over_etat) {
             let reflected = unit_direction.reflect(rec.normal);
             Scatter::new(Ray::new(rec.point, reflected), attenuation)
         } else {
