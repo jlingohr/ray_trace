@@ -6,7 +6,7 @@ use ray_trace::hittable;
 use ray_trace::sphere::Sphere;
 use ray_trace::camera::Camera;
 use ray_trace::utils;
-use ray_trace::material::{Lambertian, Metal};
+use ray_trace::material::{Lambertian, Metal, Dielectric};
 
 use std::rc::Rc;
 use rand::Rng;
@@ -22,10 +22,10 @@ fn main() {
     println!("P3\n{} {}\n255", IMAGE_WIDTH, IMAGE_HEIGHT);
 
     let mut world = hittable::HittableList::new();
-    world.add(Rc::new(Sphere::new(Point::new(0.0, 0.0, -1.0), 0.5, Rc::new(Lambertian::new(Color::new(0.7, 0.3, 0.3))))));
+    world.add(Rc::new(Sphere::new(Point::new(0.0, 0.0, -1.0), 0.5, Rc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5))))));
     world.add(Rc::new(Sphere::new(Point::new(0.0, -100.5, -1.0), 100.0, Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0))))));
-    world.add(Rc::new(Sphere::new(Point::new(1.0, 0.0, -1.0), 0.5, Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2))))));
-    world.add(Rc::new(Sphere::new(Point::new(-1.0, 0.0, -1.0), 0.5, Rc::new(Metal::new(Color::new(0.8, 0.6, 0.8))))));
+    world.add(Rc::new(Sphere::new(Point::new(1.0, 0.0, -1.0), 0.5, Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0)))));
+    world.add(Rc::new(Sphere::new(Point::new(-1.0, 0.0, -1.0), 0.5, Rc::new(Dielectric::new(1.5)))));
 
     let cam = Camera::new();
     let mut rng = rand::thread_rng();

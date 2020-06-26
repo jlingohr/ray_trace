@@ -39,6 +39,13 @@ impl Vec3 {
         *self - 2.0 * self.dot(&other) * other
     }
 
+    pub fn refract(&self, other: Vec3, etai_over_etat: f64) -> Vec3 {
+        let cos_theta = -self.dot(&other);
+        let r_out_parallel = etai_over_etat * (*self + (cos_theta*other));
+        let r_out_perp = -(1.0 - (r_out_parallel.dot(&r_out_parallel))).sqrt() * other;
+        r_out_parallel + r_out_perp
+    }
+
     pub fn random(rng: &mut ThreadRng) -> Vec3 {
         Vec3::new(utils::random_double(rng), utils::random_double(rng), utils::random_double(rng))
     }
