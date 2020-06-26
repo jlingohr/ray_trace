@@ -5,4 +5,4 @@ Learning write by writing a ray tracer following [Ray Tracing in a Weekend](http
 ```ray_trace [output-name]```
 
 ## Current result
-![](resource/out.ppm)
+![](out.ppm)
