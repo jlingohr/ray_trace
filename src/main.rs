@@ -12,7 +12,6 @@ use rand::prelude::ThreadRng;
 use std::env;
 use std::fs;
 use std::process;
-use std::rc::Rc;
 
 fn main() {
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
@@ -99,12 +98,12 @@ fn ray_color(r: Ray, world: &dyn hittable::Hittable, depth: u32, rng: &mut Threa
 
 fn random_scene(rng: &mut ThreadRng) -> hittable::HittableList {
     let mut world = hittable::HittableList::new();
-    let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
-    world.add(Rc::new(Sphere::new(
+    let ground_material = Lambertian::new(Color::new(0.5, 0.5, 0.5));
+    world.add(Sphere::new(
         Point::new(0.0, -1000.0, 0.0),
         1000.0,
         ground_material,
-    )));
+    ));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -118,47 +117,33 @@ fn random_scene(rng: &mut ThreadRng) -> hittable::HittableList {
                 if choose_mat < 0.8 {
                     // diffuse
                     let albedo = Color::random(rng) * Color::random(rng);
-                    let material = Rc::new(Lambertian::new(albedo));
+                    let material = Lambertian::new(albedo);
                     let center2 =
                         center + Vec3::new(0.0, utils::random_in_range(rng, 0.0, 0.5), 0.0);
-                    world.add(Rc::new(MovingSphere::new(
-                        center, center2, 0.0, 1.0, 0.2, material,
-                    )));
+                    world.add(MovingSphere::new(center, center2, 0.0, 1.0, 0.2, material));
                 } else if choose_mat < 0.95 {
                     // metal
                     let albedo = Color::random_in_range(rng, 0.5, 1.0);
                     let fuzz = utils::random_in_range(rng, 0.0, 0.5);
-                    let material = Rc::new(Metal::new(albedo, fuzz));
-                    world.add(Rc::new(Sphere::new(center, 0.2, material)));
+                    let material = Metal::new(albedo, fuzz);
+                    world.add(Sphere::new(center, 0.2, material));
                 } else {
                     // glass
-                    let material = Rc::new(Dielectric::new(1.5));
-                    world.add(Rc::new(Sphere::new(center, 0.2, material)));
+                    let material = Dielectric::new(1.5);
+                    world.add(Sphere::new(center, 0.2, material));
                 };
             }
         }
     }
 
-    let material1 = Rc::new(Dielectric::new(1.5));
-    world.add(Rc::new(Sphere::new(
-        Point::new(0.0, 1.0, 0.0),
-        1.0,
-        material1,
-    )));
+    let material1 = Dielectric::new(1.5);
+    world.add(Sphere::new(Point::new(0.0, 1.0, 0.0), 1.0, material1));
 
-    let material2 = Rc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
-    world.add(Rc::new(Sphere::new(
-        Point::new(-4.0, 1.0, 0.0),
-        1.0,
-        material2,
-    )));
+    let material2 = Lambertian::new(Color::new(0.4, 0.2, 0.1));
+    world.add(Sphere::new(Point::new(-4.0, 1.0, 0.0), 1.0, material2));
 
-    let material3 = Rc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
-    world.add(Rc::new(Sphere::new(
-        Point::new(4.0, 1.0, 0.0),
-        1.0,
-        material3,
-    )));
+    let material3 = Metal::new(Color::new(0.7, 0.6, 0.5), 0.0);
+    world.add(Sphere::new(Point::new(4.0, 1.0, 0.0), 1.0, material3));
 
     world
 }

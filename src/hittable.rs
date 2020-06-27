@@ -1,25 +1,31 @@
-use super::point::Point;
-use super::vector::Vec3;
-use super::ray::Ray;
+use super::aabb::AABB;
 use super::material::Material;
-use std::rc::Rc;
-
+use super::point::Point;
+use super::ray::Ray;
+use super::vector::Vec3;
 
 pub trait Hittable {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB>;
 }
 
 #[derive(Clone)]
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub point: Point,
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
-    pub material: Rc<dyn Material>,
+    pub material: &'a dyn Material,
 }
 
-impl HitRecord {
-    pub fn new(point: Point, normal: Vec3, t: f64, front_face: bool, material: Rc<dyn Material>) -> HitRecord {
+impl<'a> HitRecord<'a> {
+    pub fn new(
+        point: Point,
+        normal: Vec3,
+        t: f64,
+        front_face: bool,
+        material: &'a dyn Material,
+    ) -> HitRecord {
         HitRecord {
             point: point,
             normal: normal,
@@ -31,20 +37,22 @@ impl HitRecord {
 }
 
 pub struct HittableList {
-    pub objects: Vec<Rc<dyn Hittable>>,
+    pub objects: Vec<Box<dyn Hittable>>,
 }
 
 impl HittableList {
     pub fn new() -> HittableList {
-        HittableList { objects: Vec::new() }
+        HittableList {
+            objects: Vec::new(),
+        }
     }
 
     pub fn clear(&mut self) {
         self.objects.clear();
     }
 
-    pub fn add(&mut self, object: Rc<dyn Hittable>) {
-        self.objects.push(object);
+    pub fn add(&mut self, object: impl Hittable + 'static) {
+        self.objects.push(Box::new(object));
     }
 }
 
@@ -61,6 +69,29 @@ impl Hittable for HittableList {
                 }
             }
         }
-        return hit_anything
+        return hit_anything;
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        if self.objects.is_empty() {
+            return None;
+        }
+
+        let mut output_box: Option<AABB> = None;
+
+        // TODO this could probably be written in a fold
+        for object in self.objects.iter() {
+            match object.bounding_box(t0, t1) {
+                None => return None,
+                Some(bbox) => {
+                    output_box = match output_box {
+                        None => Some(bbox),
+                        Some(temp_box) => Some(AABB::surrounding_box(temp_box, bbox)),
+                    }
+                }
+            }
+        }
+
+        output_box
     }
 }

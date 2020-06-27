@@ -1,18 +1,19 @@
+use super::aabb::AABB;
 use super::hittable;
 use super::material::Material;
 use super::point::Point;
 use super::ray::Ray;
-use std::rc::Rc;
+use super::vector::Vec3;
 
 #[derive(Clone)]
-pub struct Sphere {
+pub struct Sphere<M: Material> {
     pub center: Point,
     pub radius: f64,
-    pub material: Rc<dyn Material>,
+    pub material: M,
 }
 
-impl Sphere {
-    pub fn new(center: Point, radius: f64, material: Rc<dyn Material>) -> Sphere {
+impl<M: Material> Sphere<M> {
+    pub fn new(center: Point, radius: f64, material: M) -> Sphere<M> {
         Sphere {
             center: center,
             radius: radius,
@@ -21,7 +22,7 @@ impl Sphere {
     }
 }
 
-impl hittable::Hittable for Sphere {
+impl<M: Material> hittable::Hittable for Sphere<M> {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<hittable::HitRecord> {
         let oc = ray.origin - self.center;
         let a = ray.direction.dot(&ray.direction);
@@ -41,13 +42,8 @@ impl hittable::Hittable for Sphere {
                 } else {
                     -outward_normal
                 };
-                let hit_record = hittable::HitRecord::new(
-                    point,
-                    normal,
-                    temp,
-                    front_face,
-                    Rc::clone(&self.material),
-                );
+                let hit_record =
+                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
                 return Some(hit_record);
             }
             let temp = (-half_b + root) / a;
@@ -60,38 +56,41 @@ impl hittable::Hittable for Sphere {
                 } else {
                     -outward_normal
                 };
-                let hit_record = hittable::HitRecord::new(
-                    point,
-                    normal,
-                    temp,
-                    front_face,
-                    Rc::clone(&self.material),
-                );
+                let hit_record =
+                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
                 return Some(hit_record);
             }
         }
         None
     }
+
+    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+        let rad = Vec3::new(self.radius, self.radius, self.radius);
+        let min = self.center - rad;
+        let max = self.center + rad;
+        let bbox = AABB::new(min, max);
+        Some(bbox)
+    }
 }
 
-pub struct MovingSphere {
+pub struct MovingSphere<M: Material> {
     pub center0: Point,
     pub center1: Point,
     pub time0: f64,
     pub time1: f64,
     pub radius: f64,
-    pub material: Rc<dyn Material>,
+    pub material: M,
 }
 
-impl MovingSphere {
+impl<M: Material> MovingSphere<M> {
     pub fn new(
         center0: Point,
         center1: Point,
         time0: f64,
         time1: f64,
         radius: f64,
-        material: Rc<dyn Material>,
-    ) -> MovingSphere {
+        material: M,
+    ) -> MovingSphere<M> {
         MovingSphere {
             center0,
             center1,
@@ -108,7 +107,7 @@ impl MovingSphere {
     }
 }
 
-impl hittable::Hittable for MovingSphere {
+impl<M: Material> hittable::Hittable for MovingSphere<M> {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<hittable::HitRecord> {
         let oc = ray.origin - self.center(ray.time);
         let a = ray.direction.dot(&ray.direction);
@@ -128,13 +127,8 @@ impl hittable::Hittable for MovingSphere {
                 } else {
                     -outward_normal
                 };
-                let hit_record = hittable::HitRecord::new(
-                    point,
-                    normal,
-                    temp,
-                    front_face,
-                    Rc::clone(&self.material),
-                );
+                let hit_record =
+                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
                 return Some(hit_record);
             }
             let temp = (-half_b + root) / a;
@@ -147,16 +141,18 @@ impl hittable::Hittable for MovingSphere {
                 } else {
                     -outward_normal
                 };
-                let hit_record = hittable::HitRecord::new(
-                    point,
-                    normal,
-                    temp,
-                    front_face,
-                    Rc::clone(&self.material),
-                );
+                let hit_record =
+                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
                 return Some(hit_record);
             }
         }
         None
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        let rad = Vec3::new(self.radius, self.radius, self.radius);
+        let box0 = AABB::new(self.center(t0) - rad, self.center(t0) + rad);
+        let box1 = AABB::new(self.center(t1) - rad, self.center(t1) + rad);
+        Some(AABB::surrounding_box(box0, box1))
     }
 }
