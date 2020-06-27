@@ -86,7 +86,7 @@ impl Hittable for HittableList {
                 Some(bbox) => {
                     output_box = match output_box {
                         None => Some(bbox),
-                        Some(temp_box) => Some(AABB::surrounding_box(temp_box, bbox)),
+                        Some(temp_box) => Some(AABB::surrounding_box(&temp_box, &bbox)),
                     }
                 }
             }

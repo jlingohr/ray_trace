@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub, Div, Neg, AddAssign, MulAssign, SubAssign, DivAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::utils;
 use rand::prelude::ThreadRng;
@@ -11,8 +11,8 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z:f64) -> Vec3 {
-        Vec3 {x, y, z}
+    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
+        Vec3 { x, y, z }
     }
 
     pub fn ones() -> Vec3 {
@@ -48,24 +48,32 @@ impl Vec3 {
 
     pub fn refract(&self, other: Vec3, etai_over_etat: f64) -> Vec3 {
         let cos_theta = -self.dot(&other);
-        let r_out_parallel = etai_over_etat * (*self + (cos_theta*other));
+        let r_out_parallel = etai_over_etat * (*self + (cos_theta * other));
         let r_out_perp = -(1.0 - (r_out_parallel.dot(&r_out_parallel))).sqrt() * other;
         r_out_parallel + r_out_perp
     }
 
     pub fn random(rng: &mut ThreadRng) -> Vec3 {
-        Vec3::new(utils::random_double(rng), utils::random_double(rng), utils::random_double(rng))
+        Vec3::new(
+            utils::random_double(rng),
+            utils::random_double(rng),
+            utils::random_double(rng),
+        )
     }
 
     pub fn random_unit_vector(rng: &mut ThreadRng) -> Vec3 {
         let a = utils::random_in_range(rng, 0.0, 2.0 * std::f64::consts::PI);
         let z = utils::random_in_range(rng, -1.0, 1.0);
-        let r = (1.0 - z*z).sqrt();
+        let r = (1.0 - z * z).sqrt();
         Vec3::new(r * a.cos(), r * a.sin(), z)
     }
 
     pub fn random_in_range(rng: &mut ThreadRng, min: f64, max: f64) -> Vec3 {
-        Vec3::new(utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max))
+        Vec3::new(
+            utils::random_in_range(rng, min, max),
+            utils::random_in_range(rng, min, max),
+            utils::random_in_range(rng, min, max),
+        )
     }
 
     pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
@@ -75,23 +83,28 @@ impl Vec3 {
                 break p;
             }
         };
-        return p
+        return p;
     }
 
     pub fn random_in_hemisphere(rng: &mut ThreadRng, normal: &Vec3) -> Vec3 {
         let in_unit_sphere = Vec3::random_in_unit_sphere(rng);
-        if in_unit_sphere.dot(normal) > 0.0 { // In the same hemisphere as the normal
-            return in_unit_sphere
+        if in_unit_sphere.dot(normal) > 0.0 {
+            // In the same hemisphere as the normal
+            return in_unit_sphere;
         } else {
-            return -in_unit_sphere
+            return -in_unit_sphere;
         }
     }
 
     pub fn random_in_unit_disk(rng: &mut ThreadRng) -> Vec3 {
         let p = loop {
-            let p = Vec3::new(utils::random_in_range(rng, -1.0, 1.0), utils::random_in_range(rng, -1.0, 1.0), 0.0);
+            let p = Vec3::new(
+                utils::random_in_range(rng, -1.0, 1.0),
+                utils::random_in_range(rng, -1.0, 1.0),
+                0.0,
+            );
             if p.dot(&p) < 1.0 {
-                break p
+                break p;
             }
         };
         p
@@ -111,9 +124,9 @@ impl Add for Vec3 {
 
     fn add(self, other: Vec3) -> Vec3 {
         Vec3 {
-            x: self.x+other.x,
-            y: self.y+other.y,
-            z: self.z+other.z
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
         }
     }
 }
@@ -151,9 +164,9 @@ impl Sub for Vec3 {
 
     fn sub(self, other: Vec3) -> Vec3 {
         Vec3 {
-            x: self.x-other.x,
-            y: self.y-other.y,
-            z: self.z-other.z
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
         }
     }
 }
@@ -191,9 +204,9 @@ impl Mul for Vec3 {
 
     fn mul(self, other: Vec3) -> Vec3 {
         Vec3 {
-            x: self.x*other.x,
-            y: self.y*other.y,
-            z: self.z*other.z
+            x: self.x * other.x,
+            y: self.y * other.y,
+            z: self.z * other.z,
         }
     }
 }
@@ -239,9 +252,9 @@ impl Div for Vec3 {
 
     fn div(self, other: Vec3) -> Vec3 {
         Vec3 {
-            x: self.x/other.x,
-            y: self.y/other.y,
-            z: self.z/other.z
+            x: self.x / other.x,
+            y: self.y / other.y,
+            z: self.z / other.z,
         }
     }
 }
@@ -262,9 +275,22 @@ impl Neg for Vec3 {
     type Output = Self;
     fn neg(self) -> Vec3 {
         Vec3 {
-            x: -1.0*self.x,
-            y: -1.0*self.y,
-            z: -1.0*self.z
+            x: -1.0 * self.x,
+            y: -1.0 * self.y,
+            z: -1.0 * self.z,
+        }
+    }
+}
+
+impl Index<usize> for Vec3 {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &f64 {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Invalid index"),
         }
     }
 }
@@ -304,7 +330,7 @@ mod tests {
             let a = Vec3::ones();
             let b = Vec3::ones();
             let c = Vec3::new(2.0, 2.0, 2.0);
-            assert_eq!(a+b, c);
+            assert_eq!(a + b, c);
         }
 
         #[test]
@@ -312,7 +338,7 @@ mod tests {
             let a = Vec3::ones();
             let b: f64 = 1.0;
             let c = Vec3::new(2.0, 2.0, 2.0);
-            assert_eq!(a+b, c);
+            assert_eq!(a + b, c);
         }
     }
 
@@ -324,7 +350,7 @@ mod tests {
             let a = Vec3::ones();
             let b = Vec3::ones();
             let c = Vec3::new(0.0, 0.0, 0.0);
-            assert_eq!(a-b, c);
+            assert_eq!(a - b, c);
         }
 
         #[test]
@@ -332,7 +358,7 @@ mod tests {
             let a = Vec3::ones();
             let b: f64 = 1.0;
             let c = Vec3::new(0.0, 0.0, 0.0);
-            assert_eq!(a-b, c);
+            assert_eq!(a - b, c);
         }
     }
 
@@ -344,7 +370,7 @@ mod tests {
             let t = 2.0;
             let a = Vec3::new(0.0, 1.0, 2.0);
             let b = Vec3::new(0.0, 2.0, 4.0);
-            assert_eq!((t as f64)*a, b);
+            assert_eq!((t as f64) * a, b);
         }
 
         #[test]
@@ -352,7 +378,7 @@ mod tests {
             let a = Vec3::new(0.0, 1.0, 2.0);
             let b = Vec3::new(1.0, 1.0, 1.0);
             let c = Vec3::new(0.0, 1.0, 2.0);
-            assert_eq!(a*b, c);
+            assert_eq!(a * b, c);
         }
     }
 
@@ -364,7 +390,7 @@ mod tests {
             let t = 2.0;
             let a = Vec3::new(1.0, 2.0, 4.0);
             let b = Vec3::new(0.5, 1.0, 2.0);
-            assert_eq!(a/(t as f64), b);
+            assert_eq!(a / (t as f64), b);
         }
 
         #[test]
@@ -372,7 +398,7 @@ mod tests {
             let a = Vec3::new(0.0, 1.0, 2.0);
             let b = Vec3::new(1.0, 2.0, 2.0);
             let c = Vec3::new(0.0, 0.5, 1.0);
-            assert_eq!(a/b, c);
+            assert_eq!(a / b, c);
         }
     }
 

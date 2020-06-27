@@ -153,6 +153,6 @@ impl<M: Material> hittable::Hittable for MovingSphere<M> {
         let rad = Vec3::new(self.radius, self.radius, self.radius);
         let box0 = AABB::new(self.center(t0) - rad, self.center(t0) + rad);
         let box1 = AABB::new(self.center(t1) - rad, self.center(t1) + rad);
-        Some(AABB::surrounding_box(box0, box1))
+        Some(AABB::surrounding_box(&box0, &box1))
     }
 }

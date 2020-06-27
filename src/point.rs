@@ -1,5 +1,5 @@
-use std::ops::{Add, Sub, AddAssign};
 use super::vector::Vec3;
+use std::ops::{Add, AddAssign, Index, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
@@ -9,8 +9,8 @@ pub struct Point {
 }
 
 impl Point {
-    pub fn new(x: f64, y: f64, z:f64) -> Point {
-        Point {x, y, z}
+    pub fn new(x: f64, y: f64, z: f64) -> Point {
+        Point { x, y, z }
     }
 }
 
@@ -29,7 +29,7 @@ impl Add<Vec3> for Point {
         Point {
             x: self.x + other.x,
             y: self.y + other.y,
-            z: self.z + other.z
+            z: self.z + other.z,
         }
     }
 }
@@ -46,7 +46,7 @@ impl Sub<Point> for Point {
     type Output = Vec3;
 
     fn sub(self, other: Point) -> Vec3 {
-        Vec3::new(self.x-other.x, self.y-other.y, self.z-other.z)
+        Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
@@ -54,7 +54,7 @@ impl Sub<Vec3> for Point {
     type Output = Point;
 
     fn sub(self, other: Vec3) -> Point {
-        Point::new(self.x-other.x, self.y-other.y, self.z-other.z)
+        Point::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
@@ -63,6 +63,19 @@ impl Sub<Point> for Vec3 {
 
     fn sub(self, other: Point) -> Point {
         other - self
+    }
+}
+
+impl Index<usize> for Point {
+    type Output = f64;
+
+    fn index(&self, index: usize) -> &f64 {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Invalid index"),
+        }
     }
 }
 
@@ -78,7 +91,7 @@ mod tests {
             let a = Point::new(0.0, 0.0, 0.0);
             let b = Vec3::ones();
             let c = Point::new(1.0, 1.0, 1.0);
-            assert_eq!(a+b, c);
+            assert_eq!(a + b, c);
         }
 
         #[test]
@@ -86,7 +99,7 @@ mod tests {
             let a = Point::new(0.0, 0.0, 0.0);
             let b = Vec3::ones();
             let c = Point::new(1.0, 1.0, 1.0);
-            assert_eq!(b+a, c);
+            assert_eq!(b + a, c);
         }
     }
 
@@ -98,7 +111,7 @@ mod tests {
             let a = Point::new(0.0, 0.0, 0.0);
             let b = Vec3::ones();
             let c = Point::new(-1.0, -1.0, -1.0);
-            assert_eq!(a-b, c);
+            assert_eq!(a - b, c);
         }
 
         #[test]
@@ -106,7 +119,7 @@ mod tests {
             let a = Point::new(0.0, 0.0, 0.0);
             let b = Vec3::ones();
             let c = Point::new(-1.0, -1.0, -1.0);
-            assert_eq!(b-a, c);
+            assert_eq!(b - a, c);
         }
 
         #[test]
@@ -114,7 +127,7 @@ mod tests {
             let a = Point::new(0.0, 0.0, 0.0);
             let b = Point::new(1.0, 1.0, 1.0);
             let c = Vec3::new(-1.0, -1.0, -1.0);
-            assert_eq!(a-b, c);
+            assert_eq!(a - b, c);
         }
     }
 }
