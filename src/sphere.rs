@@ -5,6 +5,14 @@ use super::point::Point;
 use super::ray::Ray;
 use super::vector::Vec3;
 
+fn get_sphere_uv(p: &Vec3) -> (f64, f64) {
+    let phi = p.z.atan2(p.x);
+    let theta = p.y.asin();
+    let u = 1.0 - (phi + phi) / (2.0 * std::f64::consts::PI);
+    let v = (theta + std::f64::consts::PI / 2.0) / std::f64::consts::PI;
+    (u, v)
+}
+
 #[derive(Clone)]
 pub struct Sphere<M: Material> {
     pub center: Point,
@@ -42,8 +50,9 @@ impl<M: Material> hittable::Hittable for Sphere<M> {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv(&normal);
                 let hit_record =
-                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
+                    hittable::HitRecord::new(point, normal, temp, u, v, front_face, &self.material);
                 return Some(hit_record);
             }
             let temp = (-half_b + root) / a;
@@ -56,8 +65,9 @@ impl<M: Material> hittable::Hittable for Sphere<M> {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv(&normal);
                 let hit_record =
-                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
+                    hittable::HitRecord::new(point, normal, temp, u, v, front_face, &self.material);
                 return Some(hit_record);
             }
         }
@@ -127,8 +137,9 @@ impl<M: Material> hittable::Hittable for MovingSphere<M> {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv(&normal);
                 let hit_record =
-                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
+                    hittable::HitRecord::new(point, normal, temp, u, v, front_face, &self.material);
                 return Some(hit_record);
             }
             let temp = (-half_b + root) / a;
@@ -141,8 +152,9 @@ impl<M: Material> hittable::Hittable for MovingSphere<M> {
                 } else {
                     -outward_normal
                 };
+                let (u, v) = get_sphere_uv(&normal);
                 let hit_record =
-                    hittable::HitRecord::new(point, normal, temp, front_face, &self.material);
+                    hittable::HitRecord::new(point, normal, temp, u, v, front_face, &self.material);
                 return Some(hit_record);
             }
         }

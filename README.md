@@ -4,5 +4,7 @@ Learning write by writing a ray tracer following [Ray Tracing in a Weekend](http
 ## Usage
 ```ray_trace [output-name]```
 
-## Current result
+## Current results
 ![](out.png)
+
+![](two_spheres.png)

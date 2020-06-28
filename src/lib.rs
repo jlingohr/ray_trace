@@ -8,5 +8,6 @@ pub mod point;
 pub mod ray;
 pub mod scenes;
 pub mod sphere;
+pub mod texture;
 pub mod utils;
 pub mod vector;

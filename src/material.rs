@@ -1,6 +1,7 @@
 use super::color::Color;
 use super::hittable::HitRecord;
 use super::ray::Ray;
+use super::texture::Texture;
 use super::utils;
 use super::vector::Vec3;
 use rand::prelude::ThreadRng;
@@ -20,21 +21,24 @@ pub trait Material {
     fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter>;
 }
 
-pub struct Lambertian {
-    pub albedo: Color,
+pub struct Lambertian<T: Texture> {
+    pub albedo: T,
 }
 
-impl Lambertian {
-    pub fn new(albedo: Color) -> Lambertian {
+impl<T: Texture> Lambertian<T> {
+    pub fn new(albedo: T) -> Lambertian<T> {
         Lambertian { albedo }
     }
 }
 
-impl Material for Lambertian {
+impl<T: Texture> Material for Lambertian<T> {
     fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
         let scatter_direction = rec.normal + Vec3::random_unit_vector(rng);
         let scattered = Ray::new(rec.point, scatter_direction, ray.time);
-        Some(Scatter::new(scattered, self.albedo))
+        Some(Scatter::new(
+            scattered,
+            self.albedo.value(rec.u, rec.v, &rec.point),
+        ))
     }
 }
 
