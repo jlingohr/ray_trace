@@ -1,5 +1,5 @@
 use super::vector::Vec3;
-use std::ops::{Add, AddAssign, Index, Sub};
+use std::ops::{Add, AddAssign, Index, Mul, MulAssign, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
@@ -42,6 +42,26 @@ impl Add<Point> for Vec3 {
     }
 }
 
+impl Add<f64> for Point {
+    type Output = Self;
+
+    fn add(self, t: f64) -> Point {
+        Point {
+            x: self.x + t,
+            y: self.y + t,
+            z: self.z + t,
+        }
+    }
+}
+
+impl std::ops::Add<Point> for f64 {
+    type Output = Point;
+
+    fn add(self, rhs: Point) -> Point {
+        rhs + self
+    }
+}
+
 impl Sub<Point> for Point {
     type Output = Vec3;
 
@@ -63,6 +83,34 @@ impl Sub<Point> for Vec3 {
 
     fn sub(self, other: Point) -> Point {
         other - self
+    }
+}
+
+impl MulAssign<f64> for Point {
+    fn mul_assign(&mut self, t: f64) {
+        self.x *= t;
+        self.y *= t;
+        self.z *= t;
+    }
+}
+
+impl Mul<f64> for Point {
+    type Output = Self;
+
+    fn mul(self, t: f64) -> Point {
+        Point {
+            x: self.x * t,
+            y: self.y * t,
+            z: self.z * t,
+        }
+    }
+}
+
+impl std::ops::Mul<Point> for f64 {
+    type Output = Point;
+
+    fn mul(self, rhs: Point) -> Point {
+        rhs * self
     }
 }
 

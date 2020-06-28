@@ -1,4 +1,5 @@
 use super::color::Color;
+use super::perlin::PerlinNoise;
 use super::point::Point;
 
 pub trait Texture {
@@ -44,5 +45,26 @@ impl<T: Texture> Texture for Checkered<T> {
         } else {
             self.even.value(u, v, p)
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct NoiseTexture {
+    noise: PerlinNoise,
+    scale: f64,
+}
+
+impl NoiseTexture {
+    pub fn new(scale: f64) -> NoiseTexture {
+        let noise = PerlinNoise::new();
+        NoiseTexture { noise, scale }
+    }
+}
+
+impl Texture for NoiseTexture {
+    fn value(&self, u: f64, v: f64, p: &Point) -> Color {
+        let turb = self.noise.turb(p, 7);
+        let amplitude = 1.0 + (self.scale * p.z + (10.0 * turb)).sin();
+        Color::new(1.0, 1.0, 1.0) * 0.5 * amplitude
     }
 }

@@ -1,7 +1,7 @@
-use std::ops::{Add, Mul, Sub, Div, AddAssign, MulAssign, SubAssign, DivAssign};
-use super::vector::Vec3;
 use super::utils;
+use super::vector::Vec3;
 use rand::prelude::ThreadRng;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
@@ -11,16 +11,24 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn new(r: f64, g: f64, b:f64) -> Color {
-        Color {r, g, b}
+    pub fn new(r: f64, g: f64, b: f64) -> Color {
+        Color { r, g, b }
     }
 
     pub fn random(rng: &mut ThreadRng) -> Color {
-        Color::new(utils::random_double(rng), utils::random_double(rng), utils::random_double(rng))
+        Color::new(
+            utils::random_double(rng),
+            utils::random_double(rng),
+            utils::random_double(rng),
+        )
     }
 
     pub fn random_in_range(rng: &mut ThreadRng, min: f64, max: f64) -> Color {
-        Color::new(utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max), utils::random_in_range(rng, min, max))
+        Color::new(
+            utils::random_in_range(rng, min, max),
+            utils::random_in_range(rng, min, max),
+            utils::random_in_range(rng, min, max),
+        )
     }
 
     pub fn write_color(&self, samples_per_pixel: u32) -> String {
@@ -34,7 +42,7 @@ impl Color {
         g = (scale * g).sqrt();
         b = (scale * b).sqrt();
 
-        let ir: u32  = (256.0 * utils::clamp(r, 0.0, 0.999)) as u32;
+        let ir: u32 = (256.0 * utils::clamp(r, 0.0, 0.999)) as u32;
         let ig: u32 = (256.0 * utils::clamp(g, 0.0, 0.999)) as u32;
         let ib: u32 = (256.0 * utils::clamp(b, 0.0, 0.999)) as u32;
         format!("{} {} {}\n", ir, ig, ib)
@@ -56,7 +64,7 @@ impl Add for Color {
         Color {
             r: self.r + other.r,
             g: self.g + other.g,
-            b: self.b + other.b
+            b: self.b + other.b,
         }
     }
 }
@@ -68,7 +76,7 @@ impl Add<Vec3> for Color {
         Color {
             r: self.r + other.x,
             g: self.g + other.y,
-            b: self.b + other.z
+            b: self.b + other.z,
         }
     }
 }
@@ -80,7 +88,19 @@ impl Add<Color> for Vec3 {
         Color {
             r: self.x + other.r,
             g: self.y + other.g,
-            b: self.z + other.b
+            b: self.z + other.b,
+        }
+    }
+}
+
+impl Add<f64> for Color {
+    type Output = Self;
+
+    fn add(self, t: f64) -> Color {
+        Color {
+            r: self.r + t,
+            g: self.g + t,
+            b: self.b + t,
         }
     }
 }
@@ -100,7 +120,7 @@ impl Sub for Color {
         Color {
             r: self.r - other.r,
             g: self.g - other.g,
-            b: self.b - other.b
+            b: self.b - other.b,
         }
     }
 }

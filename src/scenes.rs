@@ -4,7 +4,7 @@ use super::hittable;
 use super::material::{Dielectric, Lambertian, Metal};
 use super::point::Point;
 use super::sphere::{MovingSphere, Sphere};
-use super::texture::{Checkered, SolidColor};
+use super::texture::{Checkered, NoiseTexture, SolidColor};
 use super::utils;
 use super::vector::Vec3;
 
@@ -133,6 +133,23 @@ pub fn two_spheres(rng: &mut ThreadRng) -> Box<dyn hittable::Hittable> {
         Point::new(0.0, 10.0, 0.0),
         10.0,
         Lambertian::new(checkered),
+    ));
+
+    Box::new(world)
+}
+
+pub fn two_perlin_spheres(rng: &mut ThreadRng) -> Box<dyn hittable::Hittable> {
+    let mut world = hittable::HittableList::new();
+    let pertext = NoiseTexture::new(1.0);
+    world.add(Sphere::new(
+        Point::new(0.0, -1000.0, 0.0),
+        1000.0,
+        Lambertian::new(pertext.clone()),
+    ));
+    world.add(Sphere::new(
+        Point::new(0.0, 2.0, 0.0),
+        2.0,
+        Lambertian::new(pertext),
     ));
 
     Box::new(world)

@@ -8,3 +8,5 @@ Learning write by writing a ray tracer following [Ray Tracing in a Weekend](http
 ![](out.png)
 
 ![](two_spheres.png)
+
+![](perlin.png)

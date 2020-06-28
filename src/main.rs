@@ -29,13 +29,14 @@ fn main() {
     // let world = scenes::random_scene(&mut rng);
     // let world = scenes::random_bvh_scene(&mut rng);
     // let world = scenes::random_checkered_scene(&mut rng);
-    let world = scenes::two_spheres(&mut rng);
+    // let world = scenes::two_spheres(&mut rng);
+    let world = scenes::two_perlin_spheres(&mut rng);
 
     let look_from = Point::new(13.0, 2.0, 3.0);
     let look_at = Point::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
-    let aperature = 0.1;
+    let aperature = 0.0;
     let cam = Camera::new(
         look_from,
         look_at,
