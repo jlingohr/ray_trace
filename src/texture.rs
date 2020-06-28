@@ -68,3 +68,40 @@ impl Texture for NoiseTexture {
         Color::new(1.0, 1.0, 1.0) * 0.5 * amplitude
     }
 }
+
+pub struct ImageTexture {
+    data: Vec<u8>,
+    width: u32,
+    height: u32,
+}
+
+impl ImageTexture {
+    pub fn new(data: Vec<u8>, width: u32, height: u32) -> ImageTexture {
+        ImageTexture {
+            data,
+            width,
+            height,
+        }
+    }
+}
+
+impl Texture for ImageTexture {
+    fn value(&self, u: f64, v: f64, p: &Point) -> Color {
+        let nx = self.width as usize;
+        let ny = self.height as usize;
+        let mut i = (u * nx as f64) as usize;
+        let mut j = ((1.0 - v) * ny as f64) as usize;
+        if i > nx - 1 {
+            i = nx - 1
+        }
+        if j > ny - 1 {
+            j = ny - 1
+        }
+        let idx = 3 * i + 3 * nx * j;
+        let r = self.data[idx] as f64 / 255.0;
+        let g = self.data[idx + 1] as f64 / 255.0;
+        let b = self.data[idx + 2] as f64 / 255.0;
+
+        Color::new(r, g, b)
+    }
+}

@@ -30,7 +30,8 @@ fn main() {
     // let world = scenes::random_bvh_scene(&mut rng);
     // let world = scenes::random_checkered_scene(&mut rng);
     // let world = scenes::two_spheres(&mut rng);
-    let world = scenes::two_perlin_spheres(&mut rng);
+    // let world = scenes::two_perlin_spheres(&mut rng);
+    let world = scenes::earth(&mut rng);
 
     let look_from = Point::new(13.0, 2.0, 3.0);
     let look_at = Point::new(0.0, 0.0, 0.0);

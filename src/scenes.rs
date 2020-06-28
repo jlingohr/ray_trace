@@ -4,10 +4,11 @@ use super::hittable;
 use super::material::{Dielectric, Lambertian, Metal};
 use super::point::Point;
 use super::sphere::{MovingSphere, Sphere};
-use super::texture::{Checkered, NoiseTexture, SolidColor};
+use super::texture::{Checkered, ImageTexture, NoiseTexture, SolidColor};
 use super::utils;
 use super::vector::Vec3;
 
+use image;
 use rand::prelude::ThreadRng;
 
 pub fn random_scene(rng: &mut ThreadRng) -> Box<dyn hittable::Hittable> {
@@ -151,6 +152,20 @@ pub fn two_perlin_spheres(rng: &mut ThreadRng) -> Box<dyn hittable::Hittable> {
         2.0,
         Lambertian::new(pertext),
     ));
+
+    Box::new(world)
+}
+
+pub fn earth(rng: &mut ThreadRng) -> Box<dyn hittable::Hittable> {
+    let img = image::open("earthmap.jpg")
+        .expect("image not found")
+        .to_rgb();
+    let (nx, ny) = img.dimensions();
+    let data = img.into_raw();
+    let mut world = hittable::HittableList::new();
+    let earth_texture = ImageTexture::new(data, nx, ny);
+    let earth_surface = Lambertian::new(earth_texture);
+    world.add(Sphere::new(Point::new(0.0, 0.0, 0.0), 2.0, earth_surface));
 
     Box::new(world)
 }
