@@ -1,5 +1,6 @@
 use super::color::Color;
 use super::hittable::HitRecord;
+use super::point::Point;
 use super::ray::Ray;
 use super::texture::Texture;
 use super::utils;
@@ -19,8 +20,12 @@ impl Scatter {
 
 pub trait Material {
     fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter>;
+    fn emitted(&self, u: f64, v: f64, p: &Point) -> Color {
+        Color::new(0.0, 0.0, 0.0)
+    }
 }
 
+#[derive(Clone)]
 pub struct Lambertian<T: Texture> {
     pub albedo: T,
 }
@@ -107,5 +112,26 @@ impl Material for Dielectric {
             Scatter::new(Ray::new(rec.point, refracted, ray.time), attenuation)
         };
         Some(scattered)
+    }
+}
+
+#[derive(Clone)]
+pub struct DiffuseLight<T: Texture> {
+    pub emit: T,
+}
+
+impl<T: Texture> DiffuseLight<T> {
+    pub fn new(texture: T) -> DiffuseLight<T> {
+        DiffuseLight { emit: texture }
+    }
+}
+
+impl<T: Texture> Material for DiffuseLight<T> {
+    fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
+        None
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &Point) -> Color {
+        self.emit.value(u, v, p)
     }
 }

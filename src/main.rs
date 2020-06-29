@@ -13,8 +13,8 @@ use std::fs;
 use std::process;
 
 fn main() {
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: u32 = 384;
+    const ASPECT_RATIO: f64 = 1.0 / 1.0;
+    const IMAGE_WIDTH: u32 = 600;
     const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64) / ASPECT_RATIO) as u32;
     const SAMPLES_PER_PIXEL: u32 = 100;
     const MAX_DEPTH: u32 = 50;
@@ -31,18 +31,21 @@ fn main() {
     // let world = scenes::random_checkered_scene(&mut rng);
     // let world = scenes::two_spheres(&mut rng);
     // let world = scenes::two_perlin_spheres(&mut rng);
-    let world = scenes::earth(&mut rng);
+    // let world = scenes::earth(&mut rng);
+    // let world = scenes::simple_light(&mut rng);
+    let world = scenes::cornell_box(&mut rng);
 
-    let look_from = Point::new(13.0, 2.0, 3.0);
-    let look_at = Point::new(0.0, 0.0, 0.0);
+    let look_from = Point::new(278.0, 278.0, -800.0);
+    let look_at = Point::new(278.0, 278.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
     let aperature = 0.0;
+    let vfov = 40.0;
     let cam = Camera::new(
         look_from,
         look_at,
         view_up,
-        20.0,
+        vfov,
         ASPECT_RATIO,
         aperature,
         dist_to_focus,
@@ -52,6 +55,7 @@ fn main() {
 
     let mut image_str: Vec<String> = Vec::new();
     image_str.push(format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT));
+    let background = Color::new(0.0, 0.0, 0.0);
 
     for j in (0..IMAGE_HEIGHT).rev() {
         println!("\rScanlines remaining: {}", j);
@@ -61,7 +65,7 @@ fn main() {
                 let u = ((i as f64) + utils::random_double(&mut rng)) / (IMAGE_WIDTH - 1) as f64;
                 let v = ((j as f64) + utils::random_double(&mut rng)) / (IMAGE_HEIGHT - 1) as f64;
                 let r = cam.get_ray(&mut rng, u, v);
-                pixel_color += ray_color(r, &world, MAX_DEPTH, &mut rng);
+                pixel_color += ray_color(r, &background, &world, MAX_DEPTH, &mut rng);
             }
             image_str.push(pixel_color.write_color(SAMPLES_PER_PIXEL));
         }
@@ -88,6 +92,7 @@ impl Config {
 
 fn ray_color(
     r: Ray,
+    background: &Color,
     world: &Box<dyn hittable::Hittable>,
     depth: u32,
     rng: &mut ThreadRng,
@@ -96,12 +101,16 @@ fn ray_color(
         return Color::new(0.0, 0.0, 0.0);
     }
     if let Some(hit) = world.hit(&r, 0.001, f64::INFINITY) {
+        let emitted = hit.material.emitted(hit.u, hit.v, &hit.point);
+
         if let Some(scattered) = hit.material.scatter(r, &hit, rng) {
-            return scattered.albedo * ray_color(scattered.scattered, world, depth - 1, rng);
+            return emitted
+                + scattered.albedo
+                    * ray_color(scattered.scattered, background, world, depth - 1, rng);
+        } else {
+            return emitted;
         }
-        return Color::new(0.0, 0.0, 0.0);
+    } else {
+        return *background;
     }
-    let unit_direction = r.direction.unit();
-    let t = 0.5 * (unit_direction.y + 1.0);
-    return ((1.0 - t) * Color::new(1.0, 1.0, 1.0)) + t * Color::new(0.5, 0.7, 1.0);
 }

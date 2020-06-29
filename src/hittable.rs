@@ -101,3 +101,26 @@ impl Hittable for HittableList {
         output_box
     }
 }
+
+pub struct FlipFace<H: Hittable> {
+    pub hittable: H,
+}
+
+impl<H: Hittable> FlipFace<H> {
+    pub fn new(hittable: H) -> FlipFace<H> {
+        FlipFace { hittable }
+    }
+}
+
+impl<H: Hittable> Hittable for FlipFace<H> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        self.hittable.hit(ray, t_min, t_max).map(|mut hit| {
+            hit.front_face = !hit.front_face;
+            hit
+        })
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        self.hittable.bounding_box(t0, t1)
+    }
+}
