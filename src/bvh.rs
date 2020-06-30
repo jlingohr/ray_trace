@@ -2,7 +2,6 @@ use super::aabb::AABB;
 use super::hittable::{HitRecord, Hittable};
 use super::ray::Ray;
 
-use rand::Rng;
 use std::cmp::Ordering;
 
 pub struct BVH {

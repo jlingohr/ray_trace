@@ -33,7 +33,9 @@ fn main() {
     // let world = scenes::two_perlin_spheres(&mut rng);
     // let world = scenes::earth(&mut rng);
     // let world = scenes::simple_light(&mut rng);
-    let world = scenes::cornell_box(&mut rng);
+    // let world = scenes::cornell_box(&mut rng);
+    // let world = scenes::cornell_smoke(&mut rng);
+    let world = scenes::final_scene(&mut rng);
 
     let look_from = Point::new(278.0, 278.0, -800.0);
     let look_at = Point::new(278.0, 278.0, 0.0);

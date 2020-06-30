@@ -1,5 +1,5 @@
 use super::vector::Vec3;
-use std::ops::{Add, AddAssign, Index, Mul, MulAssign, Sub};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
@@ -122,6 +122,17 @@ impl Index<usize> for Point {
             0 => &self.x,
             1 => &self.y,
             2 => &self.z,
+            _ => panic!("Invalid index"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Point {
+    fn index_mut(&mut self, index: usize) -> &mut f64 {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
             _ => panic!("Invalid index"),
         }
     }

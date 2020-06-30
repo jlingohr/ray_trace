@@ -1,5 +1,4 @@
 use super::point::Point;
-use super::utils;
 use super::vector::Vec3;
 
 use rand::Rng;

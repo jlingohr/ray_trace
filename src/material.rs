@@ -25,7 +25,7 @@ pub trait Material {
     }
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Lambertian<T: Texture> {
     pub albedo: T,
 }
@@ -47,6 +47,7 @@ impl<T: Texture> Material for Lambertian<T> {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Metal {
     pub albedo: Color,
     fuzz: f64,
@@ -74,6 +75,7 @@ impl Material for Metal {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Dielectric {
     pub ref_idx: f64,
 }
@@ -115,7 +117,7 @@ impl Material for Dielectric {
     }
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct DiffuseLight<T: Texture> {
     pub emit: T,
 }
@@ -133,5 +135,24 @@ impl<T: Texture> Material for DiffuseLight<T> {
 
     fn emitted(&self, u: f64, v: f64, p: &Point) -> Color {
         self.emit.value(u, v, p)
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct Isotropic<T: Texture> {
+    albedo: T,
+}
+
+impl<T: Texture> Isotropic<T> {
+    pub fn new(a: T) -> Isotropic<T> {
+        Isotropic { albedo: a }
+    }
+}
+
+impl<T: Texture> Material for Isotropic<T> {
+    fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
+        let scattered = Ray::new(rec.point, Vec3::random_in_unit_sphere(rng), ray.time);
+        let attenuation = self.albedo.value(rec.u, rec.v, &rec.point);
+        Some(Scatter::new(scattered, attenuation))
     }
 }

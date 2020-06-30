@@ -56,7 +56,7 @@ impl<M: Material> Hittable for AARectangle<M> {
         let a = ray.origin[a_axis] + (t * ray.direction[a_axis]);
         let b = ray.origin[b_axis] + (t * ray.direction[b_axis]);
 
-        if (a < self.a0 || a > self.a1 || b < self.b0 || b > self.b1) {
+        if a < self.a0 || a > self.a1 || b < self.b0 || b > self.b1 {
             return None;
         }
 

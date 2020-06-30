@@ -124,3 +124,36 @@ impl<H: Hittable> Hittable for FlipFace<H> {
         self.hittable.bounding_box(t0, t1)
     }
 }
+
+pub struct Translate<H: Hittable> {
+    hittable: H,
+    offset: Vec3,
+}
+
+impl<H: Hittable> Translate<H> {
+    pub fn new(hittable: H, offset: Vec3) -> Translate<H> {
+        Translate { hittable, offset }
+    }
+}
+
+impl<H: Hittable> Hittable for Translate<H> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let moved_ray = Ray::new(ray.origin - self.offset, ray.direction, ray.time);
+        self.hittable.hit(&moved_ray, t_min, t_max).map(|mut hit| {
+            hit.point += self.offset;
+            hit.front_face = ray.direction.dot(&hit.normal) < 0.0;
+            hit.normal = if hit.front_face {
+                hit.normal
+            } else {
+                -hit.normal
+            };
+            hit
+        })
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        self.hittable
+            .bounding_box(t0, t1)
+            .map(|bbox| AABB::new(bbox.min() + self.offset, bbox.max() + self.offset))
+    }
+}
