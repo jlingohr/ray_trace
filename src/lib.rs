@@ -21,6 +21,7 @@ use crate::camera::Camera;
 use crate::color::Color;
 use crate::hittable::Hittable;
 use crate::ray::Ray;
+use crate::scenes::Scene;
 
 use rand::prelude::ThreadRng;
 use rayon::prelude::*;
