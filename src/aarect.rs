@@ -81,7 +81,7 @@ impl<M: Material> Hittable for AARectangle<M> {
         ))
     }
 
-    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
         let bbox = AABB::new(
             Point::new(self.a0, self.b0, self.k - 0.0001),
             Point::new(self.a1, self.b1, self.k + 0.0001),

@@ -1,9 +1,10 @@
 use super::utils;
 use super::vector::Vec3;
 use rand::prelude::ThreadRng;
+use std::iter::Sum;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Color {
     pub r: f64,
     pub g: f64,
@@ -188,5 +189,14 @@ impl Div<f64> for Color {
             g: self.g / t,
             b: self.b / t,
         }
+    }
+}
+
+impl Sum for Color {
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Color::default(), Add::add)
     }
 }

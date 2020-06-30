@@ -4,7 +4,7 @@ use super::point::Point;
 use super::ray::Ray;
 use super::vector::Vec3;
 
-pub trait Hittable {
+pub trait Hittable: Sync {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB>;
 }

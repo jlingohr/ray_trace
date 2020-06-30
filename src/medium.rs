@@ -1,6 +1,6 @@
 use super::aabb::AABB;
 use super::hittable::{HitRecord, Hittable};
-use super::material::{Isotropic, Material};
+use super::material::Isotropic;
 use super::ray::Ray;
 use super::texture::Texture;
 use super::vector::Vec3;

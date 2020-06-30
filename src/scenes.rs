@@ -123,7 +123,7 @@ pub fn random_checkered_scene(rng: &mut ThreadRng) -> Box<dyn Hittable> {
     Box::new(world)
 }
 
-pub fn two_spheres(rng: &mut ThreadRng) -> Box<dyn Hittable> {
+pub fn two_spheres(_rng: &mut ThreadRng) -> Box<dyn Hittable> {
     let mut world = HittableList::new();
     let checkered = Checkered::new(
         SolidColor::new(0.2, 0.3, 0.1),
@@ -143,7 +143,7 @@ pub fn two_spheres(rng: &mut ThreadRng) -> Box<dyn Hittable> {
     Box::new(world)
 }
 
-pub fn two_perlin_spheres(rng: &mut ThreadRng) -> Box<dyn Hittable> {
+pub fn two_perlin_spheres(_rng: &mut ThreadRng) -> Box<dyn Hittable> {
     let mut world = HittableList::new();
     let pertext = NoiseTexture::new(1.0);
     world.add(Sphere::new(
@@ -160,7 +160,7 @@ pub fn two_perlin_spheres(rng: &mut ThreadRng) -> Box<dyn Hittable> {
     Box::new(world)
 }
 
-pub fn earth(rng: &mut ThreadRng) -> Box<dyn Hittable> {
+pub fn earth(_rng: &mut ThreadRng) -> Box<dyn Hittable> {
     let img = image::open("earthmap.jpg")
         .expect("image not found")
         .to_rgb();
@@ -174,7 +174,7 @@ pub fn earth(rng: &mut ThreadRng) -> Box<dyn Hittable> {
     Box::new(world)
 }
 
-pub fn simple_light(rng: &mut ThreadRng) -> Box<dyn Hittable> {
+pub fn simple_light(_rng: &mut ThreadRng) -> Box<dyn Hittable> {
     let mut world = HittableList::new();
     let pertext = NoiseTexture::new(4.0);
     world.add(Sphere::new(
@@ -206,7 +206,7 @@ pub fn simple_light(rng: &mut ThreadRng) -> Box<dyn Hittable> {
     Box::new(world)
 }
 
-pub fn cornell_box(rng: &mut ThreadRng) -> Box<dyn Hittable> {
+pub fn cornell_box(_rng: &mut ThreadRng) -> Box<dyn Hittable> {
     let mut world = HittableList::new();
 
     let red = Lambertian::new(SolidColor::new(0.65, 0.05, 0.05));
@@ -289,7 +289,7 @@ pub fn cornell_box(rng: &mut ThreadRng) -> Box<dyn Hittable> {
     Box::new(world)
 }
 
-pub fn cornell_smoke(rng: &mut ThreadRng) -> Box<dyn Hittable> {
+pub fn cornell_smoke(_rng: &mut ThreadRng) -> Box<dyn Hittable> {
     let mut world = HittableList::new();
 
     let red = Lambertian::new(SolidColor::new(0.65, 0.05, 0.05));
@@ -443,7 +443,7 @@ pub fn final_scene(rng: &mut ThreadRng) -> Box<dyn Hittable> {
             let z0 = -1000.0 + (j as f64) * w;
             let y0 = 0.0;
             let x1 = x0 + w;
-            let y1 = utils::random_double(rng);
+            let y1 = utils::random_in_range(rng, 1.0, 101.0);
             let z1 = z0 + w;
 
             boxes1.add(Cube::new(
@@ -481,7 +481,7 @@ pub fn final_scene(rng: &mut ThreadRng) -> Box<dyn Hittable> {
 
     objects.add(Sphere::new(
         Point::new(260.0, 150.0, 45.0),
-        50.0,
+        70.0,
         Dielectric::new(1.5),
     ));
     objects.add(Sphere::new(

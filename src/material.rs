@@ -18,9 +18,9 @@ impl Scatter {
     }
 }
 
-pub trait Material {
+pub trait Material: Sync {
     fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter>;
-    fn emitted(&self, u: f64, v: f64, p: &Point) -> Color {
+    fn emitted(&self, _u: f64, _v: f64, _p: &Point) -> Color {
         Color::new(0.0, 0.0, 0.0)
     }
 }
@@ -129,7 +129,7 @@ impl<T: Texture> DiffuseLight<T> {
 }
 
 impl<T: Texture> Material for DiffuseLight<T> {
-    fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<Scatter> {
+    fn scatter(&self, _ray: Ray, _rec: &HitRecord, _rng: &mut ThreadRng) -> Option<Scatter> {
         None
     }
 
