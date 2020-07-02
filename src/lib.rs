@@ -72,10 +72,10 @@ pub fn ray_color(
                     let scattered = Ray::new(hit.point, p.generate(), ray_in.time);
                     let pdf_val = p.value(scattered.direction);
                     return emitted
-                        + ((albedo
+                        + albedo
                             * hit.material.scattering_pdf(&ray_in, &hit, &scattered)
-                            * ray_color(scattered, world, lights, depth - 1, rng))
-                            / pdf_val);
+                            * ray_color(scattered, world, lights, depth - 1, rng)
+                            / pdf_val;
                 }
             }
         } else {

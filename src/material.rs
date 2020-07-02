@@ -43,12 +43,8 @@ impl<T: Texture> Material for Lambertian<T> {
     }
 
     fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
-        let cosine = rec.normal.dot(&scattered.direction.unit());
-        if cosine < 0.0 {
-            return 0.0;
-        } else {
-            return cosine / std::f64::consts::PI;
-        }
+        let cosine = rec.normal.dot(&scattered.direction.unit()).max(0.0);
+        cosine / std::f64::consts::PI
     }
 }
 

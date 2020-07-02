@@ -95,7 +95,7 @@ impl<M: Material> Hittable for AARectangle<M> {
         if let Some(rec) = self.hit(&Ray::new(origin, v, 0.0), 0.001, std::f64::INFINITY) {
             let area = (self.a1 - self.a0) * (self.b1 - self.b0);
             let dist_squared = rec.t * rec.t * v.dot(&v);
-            let cosine = (v.dot(&rec.normal) / v.len()).abs();
+            let cosine = v.dot(&rec.normal).abs() / v.len().sqrt();
             if cosine != 0.0 {
                 dist_squared / (cosine * area)
             } else {

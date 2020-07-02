@@ -10,7 +10,7 @@ fn main() {
     const ASPECT_RATIO: f64 = 1.0 / 1.0;
     const IMAGE_WIDTH: u32 = 600;
     const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64) / ASPECT_RATIO) as u32;
-    const SAMPLES_PER_PIXEL: u32 = 1000;
+    const SAMPLES_PER_PIXEL: u32 = 100;
     const MAX_DEPTH: u32 = 50;
 
     let args: Vec<String> = env::args().collect();
