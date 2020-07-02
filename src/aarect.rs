@@ -5,6 +5,8 @@ use super::point::Point;
 use super::ray::Ray;
 use super::vector::Vec3;
 
+use rand::Rng;
+
 pub enum Plane {
     XY,
     XZ,
@@ -87,5 +89,30 @@ impl<M: Material> Hittable for AARectangle<M> {
             Point::new(self.a1, self.b1, self.k + 0.0001),
         );
         Some(bbox)
+    }
+
+    fn pdf_value(&self, origin: Point, v: Vec3) -> f64 {
+        if let Some(rec) = self.hit(&Ray::new(origin, v, 0.0), 0.001, std::f64::INFINITY) {
+            let area = (self.a1 - self.a0) * (self.b1 - self.b0);
+            let dist_squared = rec.t * rec.t * v.dot(&v);
+            let cosine = (v.dot(&rec.normal) / v.len()).abs();
+            if cosine != 0.0 {
+                dist_squared / (cosine * area)
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        }
+    }
+
+    fn random(&self, origin: Point) -> Vec3 {
+        let (k_axis, a_axis, b_axis) = self.plane.get_axes();
+        let mut rng = rand::thread_rng();
+        let mut random_point = Point::new(0.0, 0.0, 0.0);
+        random_point[a_axis] = rng.gen_range(self.a0, self.a1);
+        random_point[k_axis] = self.k;
+        random_point[b_axis] = rng.gen_range(self.b0, self.b1);
+        random_point - origin
     }
 }
