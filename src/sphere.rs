@@ -1,6 +1,8 @@
 use super::aabb::AABB;
 use super::hittable;
 use super::material::Material;
+use super::onb::ONB;
+use super::pdf::random_to_sphere;
 use super::point::Point;
 use super::ray::Ray;
 use super::vector::Vec3;
@@ -80,6 +82,23 @@ impl<M: Material> hittable::Hittable for Sphere<M> {
         let max = self.center + rad;
         let bbox = AABB::new(min, max);
         Some(bbox)
+    }
+
+    fn pdf_value(&self, o: Point, v: Vec3) -> f64 {
+        if let Some(hit) = self.hit(&Ray::new(o, v, 0.0), 0.001, std::f64::INFINITY) {
+            let co = self.center - o;
+            let cos_theta_max = (1.0 - self.radius * self.radius / co.dot(&co)).sqrt();
+            let solid_angle = 2.0 * std::f64::consts::PI * (1.0 - cos_theta_max);
+            return 1.0 / solid_angle;
+        }
+        return 0.0;
+    }
+
+    fn random(&self, o: Point) -> Vec3 {
+        let direction = self.center - o;
+        let distance_squared = direction.dot(&direction);
+        let uvw = ONB::build_from_w(direction);
+        uvw.local(random_to_sphere(self.radius, distance_squared))
     }
 }
 

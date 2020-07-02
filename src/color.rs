@@ -37,6 +37,16 @@ impl Color {
         let mut g = self.g;
         let mut b = self.b;
 
+        if r != r {
+            r = 0.0
+        };
+        if g != g {
+            g = 0.0
+        };
+        if b != b {
+            b = 0.0
+        };
+
         // Divide color total by the samples per pixel
         let scale = 1.0 / (samples_per_pixel as f64);
         r = (scale * r).sqrt();

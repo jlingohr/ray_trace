@@ -3,6 +3,7 @@ use super::material::Material;
 use super::point::Point;
 use super::ray::Ray;
 use super::vector::Vec3;
+use rand::Rng;
 
 pub trait Hittable: Sync {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
@@ -65,6 +66,19 @@ impl HittableList {
 
     pub fn add(&mut self, object: impl Hittable + 'static) {
         self.objects.push(Box::new(object));
+    }
+
+    fn pdf_value(&self, o: Point, v: Vec3) -> f64 {
+        let weight = 1.0 / self.objects.len() as f64;
+        self.objects
+            .iter()
+            .fold(0.0, |acc, object| acc + weight * object.pdf_value(o, v))
+    }
+
+    fn random(&self, o: Point) -> Vec3 {
+        let mut rng = rand::thread_rng();
+        let idx = rng.gen_range(0, self.objects.len());
+        self.objects[idx].random(o)
     }
 }
 

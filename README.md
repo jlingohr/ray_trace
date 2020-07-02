@@ -10,3 +10,5 @@ Learning Rust by writing a ray tracer following [Ray Tracing in a Weekend](http:
 ![](two_spheres.png)
 
 ![](perlin.png)
+
+![](cornell_mixture.png)

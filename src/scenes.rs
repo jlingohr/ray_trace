@@ -257,6 +257,7 @@ impl Scene {
         let white = Lambertian::new(SolidColor::new(0.73, 0.73, 0.73));
         let green = Lambertian::new(SolidColor::new(0.12, 0.45, 0.15));
         let light = DiffuseLight::new(SolidColor::new(15.0, 15.0, 15.0));
+        let glass_sphere = Sphere::new(Point::new(190.0, 90.0, 190.0), 90.0, Dielectric::new(1.5));
 
         world.add(FlipFace::new(AARectangle::new(
             0.0,
@@ -323,16 +324,18 @@ impl Scene {
         let box1 = Translate::new(box1, Vec3::new(265.0, 0.0, 295.0));
         world.add(box1);
 
-        let box2 = Cube::new(
-            Point::new(0.0, 0.0, 0.0),
-            Point::new(165.0, 165.0, 165.0),
-            white.clone(),
-        );
-        let box2 = RotateY::new(box2, -18.0);
-        let box2 = Translate::new(box2, Vec3::new(130.0, 0.0, 65.0));
-        world.add(box2);
+        // let box2 = Cube::new(
+        //     Point::new(0.0, 0.0, 0.0),
+        //     Point::new(165.0, 165.0, 165.0),
+        //     white.clone(),
+        // );
+        // let box2 = RotateY::new(box2, -18.0);
+        // let box2 = Translate::new(box2, Vec3::new(130.0, 0.0, 65.0));
+        // world.add(box2);
+        world.add(glass_sphere.clone());
 
         let mut lights = HittableList::new();
+        lights.add(glass_sphere);
         lights.add(AARectangle::new(
             213.0,
             343.0,
