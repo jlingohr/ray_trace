@@ -10,3 +10,6 @@ edition = "2018"
 rand = "*"
 image = "*"
 rayon = "*"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+nalgebra = "*"
