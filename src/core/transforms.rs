@@ -2,7 +2,6 @@ extern crate nalgebra as na;
 use self::na::DMatrix;
 use crate::core::geometry::ray::Ray;
 use crate::core::quaternion::Quaternion;
-use corse::geometry::quaternion::Quaternion;
 use na::Vector3;
 use nalgebra::geometry::{Point3, Point4};
 use std::ops::Mul;
@@ -229,7 +228,7 @@ impl Transform {
     }
 
     pub fn transform_ray(&self, ray: &Ray) -> Ray {
-        let (mut origin, o_error) = self.transform_point_with_error(&ray.origin, o_error);
+        let (mut origin, o_error) = self.transform_point_with_error(&ray.origin);
         let direction = self.transform_vector(&ray.direction);
         let length = direction.dot(&direction);
         let mut t_max = ray.t_max;
@@ -248,22 +247,12 @@ impl Transform {
 
     fn transform_point_with_error(
         &self,
-        point: &Point3<f64>,
-        o_error: Vector3<f64>,
+        point: &Point3<f64>
     ) -> (Point3<f64>, Point3<f64>) {
-        // let x = point.x;
-        // let y = point.y;
-        // let z = point.z;
-        //
-        // let xp = self.matrix[(0, 0)]*x + self.matrix[(0, 1)]*y + self.matrix[(0, 2)]*z + self.matrix[(0, 3)];
-        // let yp = self.matrix[(1, 0)]*x + self.matrix[(1, 1)]*y + self.matrix[(1, 2)]*z + self.matrix[(1, 3)];
-        // let zp = self.matrix[(2, 0)]*x + self.matrix[(2, 1)]*y + self.matrix[(2, 2)]*z + self.matrix[(2, 3)];
-        // let wp = self.matrix[(3, 0)]*x + self.matrix[(3, 1)]*y + self.matrix[(3, 2)]*z + self.matrix[(3, 3)];
-
         let p = point.to_homogenous();
         let transformed_point = self.matrix.transform_point(p);
         let abs_point = self.matrix.transform_point(p).abs(); // Not completely correct
-        let p_perror = abs_points.from_homogenous().to_vector() * gamma(3);
+        let p_error = abs_point.from_homogenous().to_vector() * gamma(3);
         if transformed_point.w == 1.0 {
             (
                 Point3::new(
@@ -271,7 +260,7 @@ impl Transform {
                     transformed_point.y,
                     transformed_point.z,
                 ),
-                p_perror,
+                p_error,
             )
         } else {
             let inv = 1.0 / transformed_point.w;
