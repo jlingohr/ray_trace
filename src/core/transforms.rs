@@ -1,45 +1,48 @@
 extern crate nalgebra as na;
-use self::na::DMatrix;
-use crate::core::geometry::ray::Ray;
-use crate::core::quaternion::Quaternion;
-use na::Vector3;
-use nalgebra::geometry::{Point3, Point4};
+
 use std::ops::Mul;
 
-type Matrix4 = na::Matrix<f64, na::U4, na::U4, na::ArrayStorage<f64, na::U4, na::U4>>;
+use na::{Vector3, Vector4};
+use nalgebra::geometry::{Point3};
+
+use crate::core::geometry::ray::Ray;
+use crate::core::pbrt::Float;
+use crate::core::quaternion::Quaternion;
+
+type Matrix4 = na::Matrix<Float, na::U4, na::U4, na::ArrayStorage<Float, na::U4, na::U4>>;
 
 // TODO nalgebra uses column-major order so should optimize for this
 // TODO handle error properly
 
-fn gamma(n: i32) -> f64 {
-    (n as f64 * std::f64::EPSILON * 0.5) / (1.0 - n as f64 * std::f32::EPSILON * 0.5)
+fn gamma(n: i32) -> Float {
+    (n as Float * std::f64::EPSILON * 0.5) / (1.0 - n as Float * std::f64::EPSILON * 0.5)
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Transform {
     pub matrix: Matrix4,
     pub matrix_inv: Matrix4,
 }
 
 impl Transform {
-    pub fn new(mat: [[f64; 4]; 4]) -> Transform {
+    pub fn new(mat: [[Float; 4]; 4]) -> Transform {
         let matrix = Matrix4::new(
-            mat[(0, 0)],
-            mat[(0, 1)],
-            mat[(0, 2)],
-            mat[(0, 3)],
-            mat[(1, 0)],
-            mat[(1, 1)],
-            mat[(1, 2)],
-            mat[(1, 3)],
-            mat[(2, 0)],
-            mat[(2, 1)],
-            mat[(2, 2)],
-            mat[(2, 3)],
-            mat[(3, 0)],
-            mat[(3, 1)],
-            mat[(3, 2)],
-            mat[(3, 3)],
+            mat[0][0],
+            mat[0][1],
+            mat[0][2],
+            mat[0][3],
+            mat[1][0],
+            mat[1][1],
+            mat[1][2],
+            mat[1][3],
+            mat[2][0],
+            mat[2][1],
+            mat[2][2],
+            mat[2][3],
+            mat[3][0],
+            mat[3][1],
+            mat[3][2],
+            mat[3][3],
         );
         if let Some(matrix_inv) = matrix.try_inverse() {
             Transform { matrix, matrix_inv }
@@ -58,19 +61,19 @@ impl Transform {
 
     pub fn inverse(&self) -> Transform {
         Transform {
-            matrix: self.matrix_inv.copy(),
-            matrix_inv: self.matrix.copy(),
+            matrix: self.matrix_inv,
+            matrix_inv: self.matrix,
         }
     }
 
-    pub fn transpose(t: &Transform) -> Transform {
+    pub fn transpose(&self) -> Transform {
         Transform {
-            matrix: t.matrix.transpose(),
-            matrix_inv: t.matrix_inv.transpose(),
+            matrix: self.matrix.transpose(),
+            matrix_inv: self.matrix_inv.transpose(),
         }
     }
 
-    pub fn translate(delta: &na::Vector3<f64>) -> Transform {
+    pub fn translate(delta: &na::Vector3<Float>) -> Transform {
         let matrix = Matrix4::new(
             1.0, 0.0, 0.0, delta.x, 0.0, 1.0, 0.0, delta.y, 0.0, 0.0, 1.0, delta.z, 0.0, 0.0, 0.0,
             1.0,
@@ -82,7 +85,7 @@ impl Transform {
         Transform { matrix, matrix_inv }
     }
 
-    pub fn scale(x: f64, y: f64, z: f64) -> Transform {
+    pub fn scale(x: Float, y: Float, z: Float) -> Transform {
         let matrix = Matrix4::new(
             x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0,
         );
@@ -107,7 +110,7 @@ impl Transform {
         Transform { matrix, matrix_inv }
     }
 
-    pub fn rotate_x(theta: f64) -> Transform {
+    pub fn rotate_x(theta: Float) -> Transform {
         let sin_theta = theta.sin();
         let cos_theta = theta.cos();
         let matrix = Matrix4::new(
@@ -120,7 +123,7 @@ impl Transform {
         }
     }
 
-    pub fn rotate_y(theta: f64) -> Transform {
+    pub fn rotate_y(theta: Float) -> Transform {
         let sin_theta = theta.sin();
         let cos_theta = theta.cos();
         let matrix = Matrix4::new(
@@ -133,7 +136,7 @@ impl Transform {
         }
     }
 
-    pub fn rotate_z(theta: f64) -> Transform {
+    pub fn rotate_z(theta: Float) -> Transform {
         let sin_theta = theta.sin();
         let cos_theta = theta.cos();
         let matrix = Matrix4::new(
@@ -146,7 +149,7 @@ impl Transform {
         }
     }
 
-    pub fn rotate(theta: f64, axis: &na::Vector3<f64>) -> Transform {
+    pub fn rotate(theta: Float, axis: &na::Vector3<Float>) -> Transform {
         let a = axis.normalize();
         let sin_theta = theta.sin();
         let cos_theta = theta.cos();
@@ -173,12 +176,12 @@ impl Transform {
         }
     }
 
-    pub fn orthographic(near: f64, far: f64) -> Transform {
+    pub fn orthographic(near: Float, far: Float) -> Transform {
         Transform::scale(1.0, 1.0, 1.0 / (far - near))
-            * Transform::translate(na::Vector3::new(0.0, 0.0, -near))
+            * Transform::translate(&na::Vector3::new(0.0, 0.0, -near))
     }
 
-    pub fn look_at(pos: &Point3<f64>, look: &Point3<f64>, up: &na::Vector3<f64>) -> Transform {
+    pub fn look_at(pos: &Point3<Float>, look: &Point3<Float>, up: &na::Vector3<Float>) -> Transform {
         let mut camera_to_world = Matrix4::identity();
         camera_to_world[(0, 3)] = pos.x;
         camera_to_world[(1, 3)] = pos.y;
@@ -211,9 +214,9 @@ impl Transform {
         }
     }
 
-    pub fn transform_point(&self, p: &Point3<f64>) -> Point3<f64> {
-        let p0 = Point4::new(p.x, p.y, p.z, 1.0);
-        let p1 = *self.matrix * p0;
+    pub fn transform_point(&self, p: &Point3<Float>) -> Point3<Float> {
+        let p0 = Vector4::new(p.x, p.y, p.z, 1.0);
+        let p1 = &self.matrix * p0;
         if p1.w == 1.0 {
             Point3::new(p1.x, p1.y, p1.z)
         } else {
@@ -221,9 +224,9 @@ impl Transform {
         }
     }
 
-    pub fn transform_vector(&self, v: &na::Vector3<f64>) -> na::Vector3<f64> {
+    pub fn transform_vector(&self, v: &na::Vector3<Float>) -> na::Vector3<Float> {
         let v0 = na::Vector4::new(v.x, v.y, v.z, 0.0);
-        let v1 = *self.matrix * v0;
+        let v1 = &self.matrix * v0;
         na::Vector3::new(v1.x, v1.y, v1.z)
     }
 
@@ -234,7 +237,7 @@ impl Transform {
         let mut t_max = ray.t_max;
         if length > 0.0 {
             let dt = direction.abs().dot(&o_error) / length;
-            origin += *direction * dt;
+            origin += &direction * dt;
             t_max -= dt;
         }
 
@@ -247,12 +250,12 @@ impl Transform {
 
     fn transform_point_with_error(
         &self,
-        point: &Point3<f64>
-    ) -> (Point3<f64>, Point3<f64>) {
-        let p = point.to_homogenous();
-        let transformed_point = self.matrix.transform_point(p);
-        let abs_point = self.matrix.transform_point(p).abs(); // Not completely correct
-        let p_error = abs_point.from_homogenous().to_vector() * gamma(3);
+        point: &Point3<Float>
+    ) -> (Point3<Float>, Vector3<Float>) {
+        let p = Vector4::new(point.x, point.y, point.z, 1.0);//point.to_homogenous();
+        let transformed_point = &self.matrix * p;//.transform_point(p);
+        let abs_point = (&self.matrix * p).abs();//.transform_point(p).abs(); // Not completely correct
+        let p_error = Vector3::new(abs_point.x / abs_point.w, abs_point.y / abs_point.w, abs_point.z / abs_point.w) * gamma(3);
         if transformed_point.w == 1.0 {
             (
                 Point3::new(
@@ -292,10 +295,10 @@ impl Mul for Transform {
 pub struct AnimatedTransform {
     start_transform: Transform,
     end_transform: Transform,
-    start_time: f64,
-    end_time: f64,
+    start_time: Float,
+    end_time: Float,
     is_animated: bool,
-    translations: [Vector3<f64>; 2],
+    translations: [Vector3<Float>; 2],
     rotations: [Quaternion; 2],
     scales: [Matrix4; 2],
     has_rotation: bool,
@@ -305,8 +308,8 @@ impl AnimatedTransform {
     pub fn new(
         start_transform: Transform,
         end_transform: Transform,
-        start_time: f64,
-        end_time: f64,
+        start_time: Float,
+        end_time: Float,
     ) -> AnimatedTransform {
         let is_animated = start_transform != end_transform;
         let (t0, r0, s0) = AnimatedTransform::decompose(&start_transform.matrix);
@@ -333,7 +336,7 @@ impl AnimatedTransform {
         }
     }
 
-    fn decompose(matrix: &Matrix4) -> (Vector3<f64>, Quaternion, Matrix4) {
+    fn decompose(matrix: &Matrix4) -> (Vector3<Float>, Quaternion, Matrix4) {
         // extract translation from transformation matrix
         let translation = Vector3::new(matrix[(0, 3)], matrix[(1, 3)], matrix[(2, 3)]);
 
@@ -355,7 +358,7 @@ impl AnimatedTransform {
             let rotation_it: Matrix4 = rotation.transpose().try_inverse().unwrap();
             let rotation_next: Matrix4 = 0.5 * (rotation + rotation_it);
             // Compute norm of different between R and RNext
-            let norm: f64 = (&rotation - &rotation_next).norm();
+            let norm: Float = (&rotation - &rotation_next).norm();
             rotation = rotation_next;
             count += 1;
 
@@ -368,5 +371,25 @@ impl AnimatedTransform {
         let scale = rotation.try_inverse().unwrap() * M;
 
         return (translation, r_quat, scale);
+    }
+}
+
+// Unit tests
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    mod test_transform {
+        use super::*;
+
+        #[test]
+        fn test_transform_translate() {
+            let transform = Transform::translate(&Vector3::new(1.0, 1.0, 1.0));
+            let p_check = Point3::new(0.0, 0.0, 0.0);
+            let p_expect = Point3::new(1.0, 1.0, 1.0);
+
+            assert_eq!(p_expect, transform.transform_point(&p_check));
+
+        }
     }
 }
