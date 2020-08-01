@@ -3,9 +3,10 @@ extern crate nalgebra as na;
 use std::ops::Mul;
 
 use na::{Vector3, Vector4};
-use nalgebra::geometry::{Point3};
+use nalgebra::geometry::Point3;
 
 use crate::core::geometry::ray::Ray;
+use crate::core::math::radians;
 use crate::core::pbrt::Float;
 use crate::core::quaternion::Quaternion;
 
@@ -27,22 +28,8 @@ pub struct Transform {
 impl Transform {
     pub fn new(mat: [[Float; 4]; 4]) -> Transform {
         let matrix = Matrix4::new(
-            mat[0][0],
-            mat[0][1],
-            mat[0][2],
-            mat[0][3],
-            mat[1][0],
-            mat[1][1],
-            mat[1][2],
-            mat[1][3],
-            mat[2][0],
-            mat[2][1],
-            mat[2][2],
-            mat[2][3],
-            mat[3][0],
-            mat[3][1],
-            mat[3][2],
-            mat[3][3],
+            mat[0][0], mat[0][1], mat[0][2], mat[0][3], mat[1][0], mat[1][1], mat[1][2], mat[1][3],
+            mat[2][0], mat[2][1], mat[2][2], mat[2][3], mat[3][0], mat[3][1], mat[3][2], mat[3][3],
         );
         if let Some(matrix_inv) = matrix.try_inverse() {
             Transform { matrix, matrix_inv }
@@ -73,6 +60,8 @@ impl Transform {
         }
     }
 
+    // Create translation matrix from given vector
+    // Only applies to points and should leave vectors unchanged
     pub fn translate(delta: &na::Vector3<Float>) -> Transform {
         let matrix = Matrix4::new(
             1.0, 0.0, 0.0, delta.x, 0.0, 1.0, 0.0, delta.y, 0.0, 0.0, 1.0, delta.z, 0.0, 0.0, 0.0,
@@ -110,50 +99,51 @@ impl Transform {
         Transform { matrix, matrix_inv }
     }
 
+    // Rotation along x-axis by theta degrees
     pub fn rotate_x(theta: Float) -> Transform {
-        let sin_theta = theta.sin();
-        let cos_theta = theta.cos();
+        let sin_theta = radians(theta).sin();
+        let cos_theta = radians(theta).cos();
         let matrix = Matrix4::new(
             1.0, 0.0, 0.0, 0.0, 0.0, cos_theta, -sin_theta, 0.0, 0.0, sin_theta, cos_theta, 0.0,
             0.0, 0.0, 0.0, 1.0,
         );
         Transform {
-            matrix: matrix,
+            matrix,
             matrix_inv: matrix.transpose(),
         }
     }
 
     pub fn rotate_y(theta: Float) -> Transform {
-        let sin_theta = theta.sin();
-        let cos_theta = theta.cos();
+        let sin_theta = radians(theta).sin();
+        let cos_theta = radians(theta).cos();
         let matrix = Matrix4::new(
             cos_theta, 0.0, sin_theta, 0.0, 0.0, 1.0, 0.0, 0.0, -sin_theta, 0.0, cos_theta, 0.0,
             0.0, 0.0, 0.0, 1.0,
         );
         Transform {
-            matrix: matrix,
+            matrix,
             matrix_inv: matrix.transpose(),
         }
     }
 
     pub fn rotate_z(theta: Float) -> Transform {
-        let sin_theta = theta.sin();
-        let cos_theta = theta.cos();
+        let sin_theta = radians(theta).sin();
+        let cos_theta = radians(theta).cos();
         let matrix = Matrix4::new(
             cos_theta, -sin_theta, 0.0, 0.0, sin_theta, cos_theta, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0,
         );
         Transform {
-            matrix: matrix,
+            matrix,
             matrix_inv: matrix.transpose(),
         }
     }
 
     pub fn rotate(theta: Float, axis: &na::Vector3<Float>) -> Transform {
         let a = axis.normalize();
-        let sin_theta = theta.sin();
-        let cos_theta = theta.cos();
-        let mut matrix = Matrix4::identity();
+        let sin_theta = radians(theta).sin();
+        let cos_theta = radians(theta).cos();
+        let mut matrix: Matrix4 = Matrix4::identity();
         // Rotation of first basis vector
         matrix[(0, 0)] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
         matrix[(0, 1)] = a.x * a.x * (1.0 - cos_theta) - a.z * sin_theta;
@@ -171,7 +161,7 @@ impl Transform {
         matrix[(2, 3)] = 0.0;
 
         Transform {
-            matrix: matrix,
+            matrix,
             matrix_inv: matrix.transpose(),
         }
     }
@@ -181,8 +171,17 @@ impl Transform {
             * Transform::translate(&na::Vector3::new(0.0, 0.0, -near))
     }
 
-    pub fn look_at(pos: &Point3<Float>, look: &Point3<Float>, up: &na::Vector3<Float>) -> Transform {
-        let mut camera_to_world = Matrix4::identity();
+    // Describes a transformation from a left-handed viewing coordinate system
+    // Arguments:
+    // * pos: Point3 - Camera position
+    // * look: Point3 - Point being looked at
+    // * up: Vector3 - Upwards direction
+    pub fn look_at(
+        pos: &Point3<Float>,
+        look: &Point3<Float>,
+        up: &na::Vector3<Float>,
+    ) -> Transform {
+        let mut camera_to_world: Matrix4 = Matrix4::identity();
         camera_to_world[(0, 3)] = pos.x;
         camera_to_world[(1, 3)] = pos.y;
         camera_to_world[(2, 3)] = pos.z;
@@ -206,7 +205,7 @@ impl Transform {
 
         if let Some(matrix) = camera_to_world.try_inverse() {
             Transform {
-                matrix: matrix,
+                matrix,
                 matrix_inv: camera_to_world,
             }
         } else {
@@ -214,6 +213,7 @@ impl Transform {
         }
     }
 
+    // Applies a transformation to a 3d point by first converting the point to homogenous coordinates
     pub fn transform_point(&self, p: &Point3<Float>) -> Point3<Float> {
         let p0 = Vector4::new(p.x, p.y, p.z, 1.0);
         let p1 = &self.matrix * p0;
@@ -224,6 +224,7 @@ impl Transform {
         }
     }
 
+    // Applies a transformation to a 3d vector
     pub fn transform_vector(&self, v: &na::Vector3<Float>) -> na::Vector3<Float> {
         let v0 = na::Vector4::new(v.x, v.y, v.z, 0.0);
         let v1 = &self.matrix * v0;
@@ -248,14 +249,15 @@ impl Transform {
         self.matrix.determinant() < 0.0
     }
 
-    fn transform_point_with_error(
-        &self,
-        point: &Point3<Float>
-    ) -> (Point3<Float>, Vector3<Float>) {
-        let p = Vector4::new(point.x, point.y, point.z, 1.0);//point.to_homogenous();
-        let transformed_point = &self.matrix * p;//.transform_point(p);
-        let abs_point = (&self.matrix * p).abs();//.transform_point(p).abs(); // Not completely correct
-        let p_error = Vector3::new(abs_point.x / abs_point.w, abs_point.y / abs_point.w, abs_point.z / abs_point.w) * gamma(3);
+    fn transform_point_with_error(&self, point: &Point3<Float>) -> (Point3<Float>, Vector3<Float>) {
+        let p = Vector4::new(point.x, point.y, point.z, 1.0); //point.to_homogenous();
+        let transformed_point = &self.matrix * p; //.transform_point(p);
+        let abs_point = (&self.matrix * p).abs(); //.transform_point(p).abs(); // Not completely correct
+        let p_error = Vector3::new(
+            abs_point.x / abs_point.w,
+            abs_point.y / abs_point.w,
+            abs_point.z / abs_point.w,
+        ) * gamma(3);
         if transformed_point.w == 1.0 {
             (
                 Point3::new(
@@ -381,15 +383,72 @@ mod test {
 
     mod test_transform {
         use super::*;
+        extern crate approx;
 
         #[test]
-        fn test_transform_translate() {
+        fn test_transform_translate_point() {
             let transform = Transform::translate(&Vector3::new(1.0, 1.0, 1.0));
             let p_check = Point3::new(0.0, 0.0, 0.0);
             let p_expect = Point3::new(1.0, 1.0, 1.0);
 
             assert_eq!(p_expect, transform.transform_point(&p_check));
+        }
 
+        #[test]
+        fn test_transform_translate_vector() {
+            let transform = Transform::translate(&Vector3::new(1.0, 1.0, 1.0));
+            let p_check = Vector3::new(0.0, 0.0, 0.0);
+            let p_expect = Vector3::new(0.0, 0.0, 0.0);
+
+            assert_eq!(p_expect, transform.transform_vector(&p_check));
+        }
+
+        #[test]
+        fn test_transform_scale_point() {
+            let transform = Transform::scale(0.5, 1.0, 2.0);
+            let p_check = Point3::new(1.0, 1.0, 1.0);
+            let p_expect = Point3::new(0.5, 1.0, 2.0);
+            assert_eq!(p_expect, transform.transform_point(&p_check));
+        }
+
+        #[test]
+        fn test_transform_scale_vector() {
+            let transform = Transform::scale(0.5, 1.0, 2.0);
+            let p_check = Vector3::new(1.0, 1.0, 1.0);
+            let p_expect = Vector3::new(0.5, 1.0, 2.0);
+            assert_eq!(p_expect, transform.transform_vector(&p_check));
+        }
+
+        #[test]
+        fn test_transform_rotate_point_x() {
+            let transform = Transform::rotate_x(90.0);
+            let p_check = Point3::new(1.0, 1.0, 1.0);
+            let p_expect = Point3::new(1.0, 0.0, -1.0);
+            approx::abs_diff_eq!(p_expect, transform.transform_point(&p_check));
+        }
+
+        #[test]
+        fn test_transform_rotate_point_y() {
+            let transform = Transform::rotate_y(90.0);
+            let p_check = Point3::new(1.0, 1.0, 1.0);
+            let p_expect = Point3::new(-1.0, 1.0, 0.0);
+            approx::abs_diff_eq!(p_expect, transform.transform_point(&p_check));
+        }
+
+        #[test]
+        fn test_transform_rotate_point_z() {
+            let transform = Transform::rotate_y(90.0);
+            let p_check = Point3::new(1.0, 1.0, 1.0);
+            let p_expect = Point3::new(-1.0, 0.0, 1.0);
+            approx::abs_diff_eq!(p_expect, transform.transform_point(&p_check));
+        }
+
+        #[test]
+        fn test_transform_rotate_point() {
+            let transform = Transform::rotate(90.0, &Vector3::new(1.0, 1.0, 1.0));
+            let p_check = Point3::new(1.0, 1.0, 1.0);
+            let p_expect = Point3::new(0.0, 0.0, -1.0);
+            approx::abs_diff_eq!(p_expect, transform.transform_point(&p_check));
         }
     }
 }
