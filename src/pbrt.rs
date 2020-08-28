@@ -10,6 +10,9 @@ pub const PI_OVER2: Float = 1.57079632679489661923;
 pub const PI_OVER4: Float = 0.78539816339744830961;
 
 pub const SHADOW_EPSILON: Float = 0.0001;
+pub const ONE_MINUS_EPSILON: Float = 1.0 - Float::EPSILON;
+
+pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 
 #[inline]
 pub fn radians(deg: Float) -> Float {
@@ -57,7 +60,7 @@ where
 }
 
 #[inline]
-pub fn next_float_up(v: Float) -> Float {
+pub fn next_float_up(v: f32) -> f32 {
     if v.is_infinite() && v >= 0.0 {
         v
     } else {
@@ -73,7 +76,7 @@ pub fn next_float_up(v: Float) -> Float {
 }
 
 #[inline]
-pub fn next_float_down(v: Float) -> Float {
+pub fn next_float_down(v: f32) -> f32 {
     if v.is_infinite() && v <= 0.0 {
         v
     } else {
@@ -85,5 +88,28 @@ pub fn next_float_down(v: Float) -> Float {
             ui += 1;
         }
         ui.to_f64()
+    }
+}
+
+// Find solution to  the quadratic equation at^2 + bt + c = 0
+// Return Option<Float, Float> if solution is found, else None
+#[inline]
+pub fn quadratic(a: Float, b: Float, c: Float) -> Option<(Float, Float)> {
+    let discrim = (b * b) - 4.0 * (a * c);
+    if discrim < 0.0 {
+        None
+    } else {
+        let root_discrim = discrim.sqrt();
+        let q = if b < 0.0 {
+            -0.5 * (b - root_discrim)
+        } else {
+            -0.5 * (b + root_discrim)
+        };
+        let mut t0 = q / a;
+        let mut t1 = c / q;
+        if t0 > t1 {
+            std::mem::swap(&mut t0, &mut t1);
+        }
+        Some((t0, t1))
     }
 }

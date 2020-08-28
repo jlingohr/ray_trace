@@ -287,7 +287,7 @@ impl Film {
         )
     }
 
-    pub fn merge_film_tile(&mut self, tile: FilmTile) {
+    pub fn merge_film_tile(&mut self, tile: &FilmTile) {
         for pixel in tile.get_pixel_bounds() {
             // merge pixel into pixels
             let tile_offset = tile.get_pixel_offset(&pixel);

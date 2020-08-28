@@ -1,6 +1,5 @@
 use super::color::Color;
 use super::hittable::HitRecord;
-use super::pdf;
 use super::pdf::PDF;
 use super::ray::Ray;
 use super::texture::Texture;
@@ -18,7 +17,7 @@ pub trait Material: Sync {
     fn emitted(&self, _ray: Ray, _rec: &HitRecord) -> Color {
         Color::new(0.0, 0.0, 0.0)
     }
-    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, _rec: &HitRecord, _scattered: &Ray) -> f64 {
         1.0
     }
 }
@@ -35,14 +34,14 @@ impl<T: Texture> Lambertian<T> {
 }
 
 impl<T: Texture> Material for Lambertian<T> {
-    fn scatter(&self, ray: Ray, rec: &HitRecord, rng: &mut ThreadRng) -> Option<ScatterRecord> {
+    fn scatter(&self, _ray: Ray, rec: &HitRecord, _rng: &mut ThreadRng) -> Option<ScatterRecord> {
         Some(ScatterRecord::Scatter {
             albedo: self.albedo.value(rec.u, rec.v, &rec.point),
             pdf: PDF::cosine_pdf(&rec.normal),
         })
     }
 
-    fn scattering_pdf(&self, ray: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    fn scattering_pdf(&self, _ray: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
         let cosine = rec.normal.dot(&scattered.direction.unit()).max(0.0);
         cosine / std::f64::consts::PI
     }
@@ -146,7 +145,7 @@ impl<T: Texture> Material for DiffuseLight<T> {
         None
     }
 
-    fn emitted(&self, ray: Ray, rec: &HitRecord) -> Color {
+    fn emitted(&self, _ray: Ray, rec: &HitRecord) -> Color {
         if rec.front_face {
             self.emit.value(rec.u, rec.v, &rec.point)
         } else {

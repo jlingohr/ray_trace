@@ -8,10 +8,10 @@ use rand::Rng;
 pub trait Hittable: Sync {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB>;
-    fn pdf_value(&self, o: Point, v: Vec3) -> f64 {
+    fn pdf_value(&self, _o: Point, _v: Vec3) -> f64 {
         0.0
     }
-    fn random(&self, o: Point) -> Vec3 {
+    fn random(&self, _o: Point) -> Vec3 {
         Vec3::new(1.0, 0.0, 0.0)
     }
 }

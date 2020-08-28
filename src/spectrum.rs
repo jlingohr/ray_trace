@@ -1506,7 +1506,7 @@ enum RGBIndex {
     Blue = 2,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RGBSpectrum {
     c: [Float; 3],
 }

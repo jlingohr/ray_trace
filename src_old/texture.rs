@@ -62,7 +62,7 @@ impl NoiseTexture {
 }
 
 impl Texture for NoiseTexture {
-    fn value(&self, u: f64, v: f64, p: &Point) -> Color {
+    fn value(&self, _u: f64, _v: f64, p: &Point) -> Color {
         let turb = self.noise.turb(p, 7);
         let amplitude = 1.0 + (self.scale * p.x + (10.0 * turb)).sin();
         Color::new(1.0, 1.0, 1.0) * 0.5 * amplitude
@@ -86,7 +86,7 @@ impl ImageTexture {
 }
 
 impl Texture for ImageTexture {
-    fn value(&self, u: f64, v: f64, p: &Point) -> Color {
+    fn value(&self, u: f64, v: f64, _p: &Point) -> Color {
         let nx = self.width as usize;
         let ny = self.height as usize;
         let mut i = (u * nx as f64) as usize;

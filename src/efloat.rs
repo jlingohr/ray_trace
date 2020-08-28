@@ -1,11 +1,11 @@
-use crate::core::pbrt::{next_float_down, next_float_up, Float};
+use crate::core::pbrt::{next_float_down, next_float_up, Float, MACHINE_EPSILON};
 use std::ops::{Add, Div, Mul, Sub};
 
 // Acts like a regular float but keeps track of an interval describing uncertainty of
 // a value of interest, which arise due to errors in in floating-point arithmetic
 #[derive(Debug, Copy, Clone)]
 pub struct EFloat {
-    v: f32,
+    pub v: f32,
     low: f32,
     high: f32,
 }
@@ -112,5 +112,30 @@ impl Div for EFloat {
                 high: next_float_up(div[0].max(div[1]).max(div[2].max(div[3]))),
             }
         }
+    }
+}
+
+pub fn quadratic(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
+    let discrim = (b.v as f64 * b.v as f64) - 4.0 * (a.v as f64 * c.v as f64);
+    if discrim < 0.0 {
+        None
+    } else {
+        let root_discrim = discrim.sqrt();
+        let float_root_discrim = EFloat::new(
+            root_discrim as f32,
+            MACHINE_EPSILON as f32 * root_discrim as f32,
+        );
+
+        let q = if b.v < 0.0 {
+            (b - float_root_discrim) * -0.5
+        } else {
+            (b + float_root_discrim) * -0.5
+        };
+        let mut t0 = q / a;
+        let mut t1 = c / q;
+        if t0 > t1 {
+            std::mem::swap(&mut t0, &mut t1);
+        }
+        Some((t0, t1))
     }
 }

@@ -6,8 +6,9 @@ use na::{Vector3, Vector4};
 use nalgebra::geometry::Point3;
 
 use crate::core::geometry::ray::Ray;
+use crate::core::interaction::{CommonInteraction, SurfaceInteraction, Shading};
 use crate::core::math::radians;
-use crate::core::pbrt::Float;
+use crate::core::pbrt::{radians, Float};
 use crate::core::quaternion::Quaternion;
 
 type Matrix4 = na::Matrix<Float, na::U4, na::U4, na::ArrayStorage<Float, na::U4, na::U4>>;
@@ -245,6 +246,55 @@ impl Transform {
         Ray::new(origin, direction, ray.time, t_max)
     }
 
+    pub fn transform_surface_interaction(&self, isect: &SurfaceInteraction) -> SurfaceInteraction {
+        let (point, p_error) = self.transform_point_with_error(isect.p);
+        let normal = self.transform_vector(&isect.interaction.normal).normalize();
+        let w_out = self.transform_vector(&isect.interaction.w_out);
+        let time = isect.interaction.time;
+        let uv = isect.uv;
+        let dpdu = self.transform_vector(&isect.dpdu);
+        let dpdv = self.transform_vector(&isect.dpdv);
+        let dndu = self.transform_vector(&isect.dndu);
+        let dndv = self.transform_vector(&isect.dndv);
+        let dudx = isect.dudx;
+        let dvdx = isect.dvdx;
+        let dudy = isect.dudy;
+        let dvdy = isect.dvdy;
+        let dpdx = self.transform_vector(&isect.dpdx);
+        let dpdy = self.transform_vector(&isect.dpdy);
+        let mut shading = Shading::new(
+            self.transform_vector(&isect.shading.n).normalize(),
+            self.transform_vector(&isect.shading.dpdu),
+            self.transform_vector(&isect.shading.dpdv),
+            self.transform_vector(&isect.shading.dndu),
+            self.transform_vector(&isect.shading.dndv)
+        );
+        shading.n = face_forward(&shading.n, &normal);
+
+        SurfaceInteraction {
+            interaction: CommonInteraction {
+                point,
+                time,
+                p_error,
+                w_out,
+                normal,
+            },
+            uv,
+            dpdu,
+            dpdv,
+            shape: isect.shape,
+            dndu,
+            dndv,
+            shading.
+            dpdx,
+            dpdy,
+            dudx,
+            dvdx,
+            dudy,
+            dvdy,
+        }
+    }
+
     pub fn swap_handedness(&self) -> bool {
         self.matrix.determinant() < 0.0
     }
@@ -278,6 +328,44 @@ impl Transform {
                 p_error,
             )
         }
+    }
+
+    pub fn transform_vector_with_error(
+        &self,
+        v: &Vector3<Float>,
+    ) -> (Vector3<Float>, Vector3<Float>) {
+        let gamma = gamma(3);
+        // TODO is there way to rust do Ax?
+        let abs_error_x = gamma
+            * ((self.matrix[(0, 0)] * v.x).abs()
+                + (self.matrix[(0, 1)] * v.y).abs()
+                + (self.matrix[(0, 2)] * v.z).abs());
+        let abs_error_y = gamma
+            * ((self.matrix[(1, 0)] * v.x).abs()
+                + (self.matrix[(1, 1)] * v.y).abs()
+                + (self.matrix[(1, 2)] * v.z).abs());
+        let abs_error_z = gamma
+            * ((self.matrix[(2, 0)] * v.x).abs()
+                + (self.matrix[(2, 1)] * v.y).abs()
+                + (self.matrix[(2, 2)] * v.z).abs());
+
+        let transformed_vector = &self.matrix * v;
+        let v_error = Vector3::new(abs_error_x, abs_error_y, abs_error_z);
+
+        (transformed_vector, v_error)
+    }
+
+    pub fn transform_ray_with_error(&self, ray: &Ray) -> (Ray, Vector3<Float>, Vector3<Float>) {
+        let (mut o, o_error) = self.transform_point_with_error(&ray.origin);
+        let (d, d_error) = self.transform_vector_with_error(&ray.direction);
+        let length_squared = d.dot(&d);
+        if length_squared > 0.0 {
+            let dt = &d.abs().dot(&o_error) / length_squared;
+            o += &d * dt;
+        }
+        let new_ray = Ray::new(o, d, ray.time, ray.t_max);
+
+        (new_ray, o_error, d_error)
     }
 }
 

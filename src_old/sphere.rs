@@ -85,7 +85,7 @@ impl<M: Material> hittable::Hittable for Sphere<M> {
     }
 
     fn pdf_value(&self, o: Point, v: Vec3) -> f64 {
-        if let Some(hit) = self.hit(&Ray::new(o, v, 0.0), 0.001, std::f64::INFINITY) {
+        if let Some(_hit) = self.hit(&Ray::new(o, v, 0.0), 0.001, std::f64::INFINITY) {
             let co = self.center - o;
             let cos_theta_max = (1.0 - self.radius * self.radius / co.dot(&co)).sqrt();
             let solid_angle = 2.0 * std::f64::consts::PI * (1.0 - cos_theta_max);
