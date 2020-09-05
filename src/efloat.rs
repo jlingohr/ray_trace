@@ -1,5 +1,6 @@
-use crate::core::pbrt::{next_float_down, next_float_up, Float, MACHINE_EPSILON};
 use std::ops::{Add, Div, Mul, Sub};
+
+use crate::pbrt::{next_float_down, next_float_up, MACHINE_EPSILON};
 
 // Acts like a regular float but keeps track of an interval describing uncertainty of
 // a value of interest, which arise due to errors in in floating-point arithmetic
@@ -133,7 +134,7 @@ pub fn quadratic(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
         };
         let mut t0 = q / a;
         let mut t1 = c / q;
-        if t0 > t1 {
+        if t0.v > t1.v {
             std::mem::swap(&mut t0, &mut t1);
         }
         Some((t0, t1))

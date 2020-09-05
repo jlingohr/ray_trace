@@ -5,25 +5,30 @@ use std::ops::Mul;
 use na::{Vector3, Vector4};
 use nalgebra::geometry::Point3;
 
-use crate::core::geometry::ray::Ray;
-use crate::core::interaction::{CommonInteraction, SurfaceInteraction, Shading};
-use crate::core::math::radians;
-use crate::core::pbrt::{radians, Float};
-use crate::core::quaternion::Quaternion;
+use crate::geometry::face_forward;
+use crate::geometry::ray::Ray;
+use crate::interaction::{CommonInteraction, Shading, SurfaceInteraction};
+use crate::pbrt::{gamma, lerp, radians, Float};
+use crate::quaternion::{slerp, Quaternion};
 
 type Matrix4 = na::Matrix<Float, na::U4, na::U4, na::ArrayStorage<Float, na::U4, na::U4>>;
 
 // TODO nalgebra uses column-major order so should optimize for this
 // TODO handle error properly
 
-fn gamma(n: i32) -> Float {
-    (n as Float * std::f64::EPSILON * 0.5) / (1.0 - n as Float * std::f64::EPSILON * 0.5)
-}
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Transform {
     pub matrix: Matrix4,
     pub matrix_inv: Matrix4,
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Transform {
+            matrix: Matrix4::identity(),
+            matrix_inv: Matrix4::identity(),
+        }
+    }
 }
 
 impl Transform {
@@ -226,10 +231,10 @@ impl Transform {
     }
 
     // Applies a transformation to a 3d vector
-    pub fn transform_vector(&self, v: &na::Vector3<Float>) -> na::Vector3<Float> {
+    pub fn transform_vector(&self, v: &na::Vector3<Float>) -> Vector3<Float> {
         let v0 = na::Vector4::new(v.x, v.y, v.z, 0.0);
         let v1 = &self.matrix * v0;
-        na::Vector3::new(v1.x, v1.y, v1.z)
+        Vector3::new(v1.x, v1.y, v1.z)
     }
 
     pub fn transform_ray(&self, ray: &Ray) -> Ray {
@@ -246,53 +251,32 @@ impl Transform {
         Ray::new(origin, direction, ray.time, t_max)
     }
 
-    pub fn transform_surface_interaction(&self, isect: &SurfaceInteraction) -> SurfaceInteraction {
-        let (point, p_error) = self.transform_point_with_error(isect.p);
-        let normal = self.transform_vector(&isect.interaction.normal).normalize();
-        let w_out = self.transform_vector(&isect.interaction.w_out);
-        let time = isect.interaction.time;
-        let uv = isect.uv;
-        let dpdu = self.transform_vector(&isect.dpdu);
-        let dpdv = self.transform_vector(&isect.dpdv);
-        let dndu = self.transform_vector(&isect.dndu);
-        let dndv = self.transform_vector(&isect.dndv);
-        let dudx = isect.dudx;
-        let dvdx = isect.dvdx;
-        let dudy = isect.dudy;
-        let dvdy = isect.dvdy;
-        let dpdx = self.transform_vector(&isect.dpdx);
-        let dpdy = self.transform_vector(&isect.dpdy);
-        let mut shading = Shading::new(
-            self.transform_vector(&isect.shading.n).normalize(),
-            self.transform_vector(&isect.shading.dpdu),
-            self.transform_vector(&isect.shading.dpdv),
-            self.transform_vector(&isect.shading.dndu),
-            self.transform_vector(&isect.shading.dndv)
+    pub fn transform_surface_interaction(&self, isect: &mut SurfaceInteraction) {
+        let (point, p_error) = self.transform_point_with_error(&isect.interaction.point);
+        isect.interaction.normal = self.transform_vector(&isect.interaction.normal).normalize();
+        isect.interaction.w0 = self.transform_vector(&isect.interaction.w0);
+        isect.interaction.time = isect.interaction.time;
+        // isect.uv = isect.uv;
+        isect.dpdu = self.transform_vector(&isect.dpdu);
+        isect.dpdv = self.transform_vector(&isect.dpdv);
+        isect.dndu = self.transform_vector(&isect.dndu);
+        isect.dndv = self.transform_vector(&isect.dndv);
+        isect.dudx = isect.dudx;
+        isect.dvdx = isect.dvdx;
+        isect.dudy = isect.dudy;
+        isect.dvdy = isect.dvdy;
+        isect.dpdx = self.transform_vector(&isect.dpdx);
+        isect.dpdy = self.transform_vector(&isect.dpdy);
+        isect.shading.normal = self.transform_vector(&isect.shading.normal).normalize();
+        isect.shading.dpdu = self.transform_vector(&isect.shading.dpdu);
+        isect.shading.dpdv = self.transform_vector(&isect.shading.dpdv);
+        isect.shading.dndu = self.transform_vector(&isect.shading.dndu);
+        isect.shading.dndv = self.transform_vector(&isect.shading.dndv);
+        isect.shading.normal = face_forward(
+            isect.shading.normal.clone_owned(),
+            isect.interaction.normal.clone_owned(),
         );
-        shading.n = face_forward(&shading.n, &normal);
-
-        SurfaceInteraction {
-            interaction: CommonInteraction {
-                point,
-                time,
-                p_error,
-                w_out,
-                normal,
-            },
-            uv,
-            dpdu,
-            dpdv,
-            shape: isect.shape,
-            dndu,
-            dndv,
-            shading.
-            dpdx,
-            dpdy,
-            dudx,
-            dvdx,
-            dudy,
-            dvdy,
-        }
+        isect.dist = isect.dist;
     }
 
     pub fn swap_handedness(&self) -> bool {
@@ -349,7 +333,11 @@ impl Transform {
                 + (self.matrix[(2, 1)] * v.y).abs()
                 + (self.matrix[(2, 2)] * v.z).abs());
 
-        let transformed_vector = &self.matrix * v;
+        let transformed_vector = Vector3::new(
+            self.matrix[(0, 0)] * v.x + self.matrix[(0, 1)] * v.y + self.matrix[(0, 2)] * v.z,
+            self.matrix[(1, 0)] * v.x + self.matrix[(1, 1)] * v.y + self.matrix[(1, 2)] * v.z,
+            self.matrix[(2, 0)] * v.x + self.matrix[(2, 1)] * v.y + self.matrix[(2, 2)] * v.z,
+        );
         let v_error = Vector3::new(abs_error_x, abs_error_y, abs_error_z);
 
         (transformed_vector, v_error)
@@ -462,6 +450,69 @@ impl AnimatedTransform {
 
         return (translation, r_quat, scale);
     }
+
+    pub fn transform_ray(&self, ray: &Ray) -> Ray {
+        if !self.is_animated || ray.time <= self.start_time {
+            self.start_transform.transform_ray(ray)
+        } else if ray.time >= self.end_time {
+            self.end_transform.transform_ray(ray)
+        } else {
+            let interpolation = self.interpolate(ray.time);
+            interpolation.transform_ray(ray)
+        }
+    }
+
+    pub fn transform_point(&self, time: Float, p: &Point3<Float>) -> Point3<Float> {
+        if !self.is_animated || time < self.start_time {
+            self.start_transform.transform_point(p)
+        } else if time >= self.end_time {
+            self.end_transform.transform_point(p)
+        } else {
+            let interpolation = self.interpolate(time);
+            interpolation.transform_point(p)
+        }
+    }
+
+    pub fn transform_vector(&self, time: Float, v: &Vector3<Float>) -> Vector3<Float> {
+        if !self.is_animated || time < self.start_time {
+            self.start_transform.transform_vector(v)
+        } else if time >= self.end_time {
+            self.end_transform.transform_vector(v)
+        } else {
+            let interpolation = self.interpolate(time);
+            interpolation.transform_vector(v)
+        }
+    }
+
+    fn interpolate(&self, time: Float) -> Transform {
+        if !self.is_animated || time <= self.start_time {
+            return self.start_transform;
+        }
+        if time >= self.end_time {
+            return self.end_transform;
+        }
+
+        let dt = (time - self.start_time) / (self.end_time - self.start_time);
+
+        // interpolate translation at dt
+        let trans: Vector3<Float> = &self.translations[0] * (1.0 - dt) + dt * &self.translations[1];
+        // interpolate rotation at dt
+        let rotate = slerp(dt, &self.rotations[0], &self.rotations[1]);
+        // interpolate scale at dt
+        let mut scale = Matrix4::zeros();
+        for i in 0..3 {
+            for j in 0..3 {
+                scale[(i, j)] = lerp(dt, self.scales[0][(i, j)], self.scales[1][(i, j)]);
+            }
+        }
+        // compute interpolated matrix as product of interpolated components
+        Transform::translate(&trans)
+            * rotate.to_transform()
+            * Transform {
+                matrix: scale,
+                matrix_inv: scale.try_inverse().unwrap(), //TODO better way
+            }
+    }
 }
 
 // Unit tests
@@ -471,6 +522,7 @@ mod test {
 
     mod test_transform {
         use super::*;
+
         extern crate approx;
 
         #[test]

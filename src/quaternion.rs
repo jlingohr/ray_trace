@@ -1,10 +1,11 @@
-use crate::core::pbrt::Float;
-
 extern crate nalgebra as na;
-use crate::core::transforms::Transform;
+
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+
 use na::Vector3;
-use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, MulAssign, DivAssign};
-use crate::core::math::clamp;
+
+use crate::pbrt::{clamp, Float};
+use crate::transforms::Transform;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Quaternion {
@@ -14,7 +15,7 @@ pub struct Quaternion {
 
 impl Quaternion {
     pub fn new(v: Vector3<Float>, w: Float) -> Quaternion {
-        Quaternion {v, w,}
+        Quaternion { v, w }
     }
 
     pub fn dot(&self, other: &Quaternion) -> Float {
@@ -59,11 +60,12 @@ impl Quaternion {
             let s = (trace + 1.0).sqrt();
             let w = s / 2.0;
             let s = 0.5 / s;
-            let v = Vector3::new((m[(2, 1)] - m[(1, 2)]) * s, (m[(0, 2)] - m[(2, 0)]) * s, (m[(1, 0)] - m[(0, 1)]) * s);
-            Quaternion {
-                v,
-                w
-            }
+            let v = Vector3::new(
+                (m[(2, 1)] - m[(1, 2)]) * s,
+                (m[(0, 2)] - m[(2, 0)]) * s,
+                (m[(1, 0)] - m[(0, 1)]) * s,
+            );
+            Quaternion { v, w }
         } else {
             // compute largest of x, y, z, then remaining components
             let nxt = [1, 2, 0];
@@ -86,17 +88,14 @@ impl Quaternion {
             q[j] = (m[(j, i)] - m[(i, j)]) * s;
             q[k] = (m[(k, i)] + m[(i, k)]) * s;
             let v = Vector3::new(q[0], q[1], q[2]);
-            Quaternion {
-                v,
-                w,
-            }
+            Quaternion { v, w }
         }
     }
 
     pub fn slerp(&self, other: &Quaternion, t: Float) -> Quaternion {
         let cos_theta = self.dot(other);
         if cos_theta > 0.9995 {
-            (((1.0 - t) * self )+ (t * other)).normalize()
+            (((1.0 - t) * self) + (t * other)).normalize()
         } else {
             let theta = clamp(cos_theta, -1.0, 1.0).acos();
             let theta_p = theta * t;
@@ -104,6 +103,10 @@ impl Quaternion {
             theta_p.cos() * self + theta_p.sin() * qperp
         }
     }
+}
+
+pub fn slerp(t: Float, q1: &Quaternion, q2: &Quaternion) -> Quaternion {
+    q1.slerp(q2, t)
 }
 
 impl AddAssign for Quaternion {
@@ -221,10 +224,11 @@ impl Neg for Quaternion {
 
 #[cfg(test)]
 mod test {
+    use na::Vector3;
+
     use super::*;
 
     extern crate nalgebra as na;
-    use na::Vector3;
 
     #[test]
     fn test_dot() {

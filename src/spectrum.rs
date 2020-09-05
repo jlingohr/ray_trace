@@ -1,9 +1,10 @@
-use crate::core::pbrt::{clamp, find_interval, lerp, Float};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-const N_CIE_SAMPLES: i32 = 471;
+use crate::pbrt::{clamp, find_interval, Float, lerp};
+
+const N_CIE_SAMPLES: usize = 471;
 pub const CIE_X: [Float; N_CIE_SAMPLES as usize] = [
     // CIE X function values
     0.000_129_900_0,
@@ -1471,7 +1472,7 @@ pub const CIE_LAMBDA: [Float; N_CIE_SAMPLES as usize] = [
 pub const CIE_Y_INTEGRAL: Float = 106.856_895;
 
 #[inline]
-fn rgb_to_xyz(rgb: &[Float; 3]) -> [Float; 3] {
+pub fn rgb_to_xyz(rgb: &[Float; 3]) -> [Float; 3] {
     let mut xyz = [0.0; 3];
     xyz[0] = 0.412453 * rgb[0] + 0.357580 * rgb[1] + 0.180423 * rgb[2];
     xyz[1] = 0.212671 * rgb[0] + 0.715160 * rgb[1] + 0.072169 * rgb[2];
@@ -1480,7 +1481,7 @@ fn rgb_to_xyz(rgb: &[Float; 3]) -> [Float; 3] {
 }
 
 #[inline]
-fn xyz_to_rgb(xyz: &[Float; 3]) -> [Float; 3] {
+pub fn xyz_to_rgb(xyz: &[Float; 3]) -> [Float; 3] {
     let mut rgb = [0.0; 3];
     rgb[0] = 3.240479 * xyz[0] - 1.537150 * xyz[1] - 0.498535 * xyz[2];
     rgb[1] = -0.969256 * xyz[0] + 1.875991 * xyz[1] + 0.041556 * xyz[2];
@@ -1490,13 +1491,14 @@ fn xyz_to_rgb(xyz: &[Float; 3]) -> [Float; 3] {
 
 fn interpolate_spectrum_samples(lambda: &[Float], vals: &[Float], n: usize, l: Float) -> Float {
     if l <= lambda[0] {
-        vals[0]
+        return vals[0];
     }
     if l >= lambda[n - 1] {
-        vals[n - 1]
+        return vals[n - 1];
     }
     let offset = find_interval(n, |index| lambda[index] <= l);
     let t = (l - lambda[offset]) / (lambda[offset + 1] - lambda[offset]);
+
     lerp(t, vals[offset], vals[offset + 1])
 }
 
@@ -1510,6 +1512,7 @@ enum RGBIndex {
 pub struct RGBSpectrum {
     c: [Float; 3],
 }
+
 impl RGBSpectrum {
     pub fn new(v: Float) -> RGBSpectrum {
         RGBSpectrum { c: [v, v, v] }
@@ -1538,8 +1541,8 @@ impl RGBSpectrum {
             xyz[2] += val * CIE_Z[i];
         }
 
-        let scale =
-            (CIE_LAMBDA[N_CIE_SAMPLES - 1] - CIE_LAMBDA[0]) / (CIE_Y_INTEGRAL * N_CIE_SAMPLES);
+        let scale = (CIE_LAMBDA[N_CIE_SAMPLES - 1] - CIE_LAMBDA[0])
+            / (CIE_Y_INTEGRAL * (N_CIE_SAMPLES as Float));
         xyz[0] *= scale;
         xyz[1] *= scale;
         xyz[2] *= scale;
@@ -1563,7 +1566,7 @@ impl RGBSpectrum {
     pub fn is_black(&self) -> bool {
         for i in 0..3 {
             if self.c[i] != 0.0 {
-                false
+                return false;
             }
         }
         true
@@ -1609,7 +1612,7 @@ impl Add for RGBSpectrum {
 }
 
 impl Add<Float> for RGBSpectrum {
-    type Output = Float;
+    type Output = RGBSpectrum;
 
     fn add(self, v: Float) -> RGBSpectrum {
         RGBSpectrum {
@@ -1641,7 +1644,7 @@ impl Sub for RGBSpectrum {
 }
 
 impl Sub<Float> for RGBSpectrum {
-    type Output = Float;
+    type Output = RGBSpectrum;
 
     fn sub(self, v: Float) -> RGBSpectrum {
         RGBSpectrum {
@@ -1673,11 +1676,20 @@ impl Mul for RGBSpectrum {
 }
 
 impl Mul<Float> for RGBSpectrum {
-    type Output = Float;
+    type Output = RGBSpectrum;
 
     fn mul(self, v: Float) -> RGBSpectrum {
         RGBSpectrum {
             c: [self.c[0] * v, self.c[1] * v, self.c[2] * v],
+        }
+    }
+}
+
+impl Mul<RGBSpectrum> for Float {
+    type Output = RGBSpectrum;
+    fn mul(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum {
+            c: [rhs.c[0] * self, rhs.c[1] * self, rhs.c[2] * self],
         }
     }
 }
@@ -1705,7 +1717,7 @@ impl Div for RGBSpectrum {
 }
 
 impl Div<Float> for RGBSpectrum {
-    type Output = Float;
+    type Output = RGBSpectrum;
 
     fn div(self, v: Float) -> RGBSpectrum {
         RGBSpectrum {
@@ -1725,21 +1737,21 @@ impl DivAssign for RGBSpectrum {
 impl Index<RGBIndex> for RGBSpectrum {
     type Output = Float;
 
-    fn index(&self, index: RGBIndex) -> Float {
+    fn index(&self, index: RGBIndex) -> &Self::Output {
         match index {
-            RGBIndex::Red => self.c[0],
-            RGBIndex::Green => self.c[1],
-            RGBIndex::Blue => self.c[2],
+            RGBIndex::Red => &self.c[0],
+            RGBIndex::Green => &self.c[1],
+            RGBIndex::Blue => &self.c[2],
         }
     }
 }
 
 impl IndexMut<RGBIndex> for RGBSpectrum {
-    fn index_mut(&mut self, index: RGBIndex) -> Float {
+    fn index_mut(&mut self, index: RGBIndex) -> &mut Self::Output {
         match index {
-            RGBIndex::Red => self.c[0],
-            RGBIndex::Green => self.c[1],
-            RGBIndex::Blue => self.c[2],
+            RGBIndex::Red => &mut self.c[0],
+            RGBIndex::Green => &mut self.c[1],
+            RGBIndex::Blue => &mut self.c[2],
         }
     }
 }

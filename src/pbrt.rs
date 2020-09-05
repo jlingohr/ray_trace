@@ -1,4 +1,6 @@
-use crate::core::spectrum::RGBSpectrum;
+use nalgebra::{Point3, Vector3};
+
+use crate::spectrum::RGBSpectrum;
 
 // Contains all global functions and constants
 // Should be included in all other source files
@@ -6,13 +8,14 @@ pub type Float = f64;
 pub type Spectrum = RGBSpectrum;
 
 pub const PI: Float = 3.14159265358979323846;
+pub const INV_PI: Float = 0.31830988618379067154;
 pub const PI_OVER2: Float = 1.57079632679489661923;
 pub const PI_OVER4: Float = 0.78539816339744830961;
 
 pub const SHADOW_EPSILON: Float = 0.0001;
 pub const ONE_MINUS_EPSILON: Float = 1.0 - Float::EPSILON;
 
-pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
+pub const MACHINE_EPSILON: Float = Float::EPSILON * 0.5;
 
 #[inline]
 pub fn radians(deg: Float) -> Float {
@@ -41,8 +44,8 @@ pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
 }
 
 pub fn find_interval<P>(size: usize, pred: P) -> usize
-where
-    P: Fn(usize) -> bool,
+    where
+        P: Fn(usize) -> bool,
 {
     let mut first = 0;
     let mut len = size;
@@ -71,7 +74,7 @@ pub fn next_float_up(v: f32) -> f32 {
         } else {
             ui -= 1;
         }
-        ui.to_f64()
+        f32::from_bits(ui)
     }
 }
 
@@ -87,7 +90,7 @@ pub fn next_float_down(v: f32) -> f32 {
         } else {
             ui += 1;
         }
-        ui.to_f64()
+        f32::from_bits(ui)
     }
 }
 
@@ -112,4 +115,15 @@ pub fn quadratic(a: Float, b: Float, c: Float) -> Option<(Float, Float)> {
         }
         Some((t0, t1))
     }
+}
+
+#[inline]
+pub fn gamma(n: i32) -> Float {
+    (n as Float * std::f64::EPSILON * 0.5) / (1.0 - n as Float * std::f64::EPSILON * 0.5)
+}
+
+#[inline]
+pub fn distance(p1: &Point3<Float>, p2: &Point3<Float>) -> Float {
+    let diff: Vector3<Float> = p1 - p2;
+    (diff.x * diff.x + diff.y * diff.y + diff.z * diff.z).sqrt()
 }

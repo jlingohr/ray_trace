@@ -1,10 +1,11 @@
-use crate::core::pbrt::Float;
-
 extern crate nalgebra as na;
+
+use std::ops::Index;
+
 use na::geometry::{Point2, Point3};
 use na::{Vector2, Vector3};
 
-use std::ops::Index;
+use crate::pbrt::Float;
 
 // TODO should be able to type parametrerize bounds2<T> but couldn't
 // get to work with nalgebra
@@ -76,17 +77,22 @@ impl Bounds2i {
     }
 
     pub fn expand(&self, delta: Float) -> Bounds2i {
-        Bounds2i {
-            p_min: &self.p_min - Vector2::new(delta, delta),
-            p_max: &self.p_max + Vector2::new(delta, delta),
-        }
+        let p_min = Point2::new(
+            (self.p_min.x as Float - delta).floor() as i32,
+            (self.p_min.y as Float - delta).floor() as i32,
+        );
+        let p_max = Point2::new(
+            (self.p_max.x as Float - delta).ceil() as i32,
+            (self.p_max.y as Float - delta).ceil() as i32,
+        );
+        Bounds2i { p_min, p_max }
     }
 
     pub fn diagonal(&self) -> Vector2<i32> {
         &self.p_max - &self.p_min
     }
 
-    pub fn surface_area(&self) -> i32 {
+    pub fn area(&self) -> i32 {
         let d = self.diagonal();
         d.x * d.y
     }
@@ -111,15 +117,15 @@ impl Index<usize> for Bounds2i {
     }
 }
 
-struct Bounds2iIterator<'a> {
+pub struct Bounds2iIterator {
     point: Point2<i32>,
-    bounds: &'a Bounds2i,
+    bounds: Bounds2i,
 }
 
-impl<'a> Iterator for Bounds2iIterator<'a> {
-    type Item = &'a Point2<i32>;
+impl Iterator for Bounds2iIterator {
+    type Item = Point2<i32>;
 
-    fn next(&mut self) -> Option<&'a Point2<i32>> {
+    fn next(&mut self) -> Option<Point2<i32>> {
         self.point.x += 1;
         if self.point.x == self.bounds.p_max.x {
             self.point.x = self.bounds.p_min.x;
@@ -129,14 +135,14 @@ impl<'a> Iterator for Bounds2iIterator<'a> {
         if self.point.y == self.bounds.p_max.y {
             None
         } else {
-            Some(&self.point)
+            Some(self.point.clone())
         }
     }
 }
 
-impl<'a> IntoIterator for &'a Bounds2i {
+impl IntoIterator for Bounds2i {
     type Item = Point2<i32>;
-    type IntoIter = Bounds2iIterator<'a>;
+    type IntoIter = Bounds2iIterator;
 
     fn into_iter(self) -> Self::IntoIter {
         Bounds2iIterator {
@@ -146,17 +152,17 @@ impl<'a> IntoIterator for &'a Bounds2i {
     }
 }
 
-impl<'a> IntoIterator for Bounds2i {
-    type Item = Point2<i32>;
-    type IntoIter = Bounds2iIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Bounds2iIterator {
-            point: Point2::new(self.p_min.x - 1, self.p_min.y),
-            bounds: &self,
-        }
-    }
-}
+// impl<'a> IntoIterator for Bounds2i {
+//     type Item = Point2<i32>;
+//     type IntoIter = Bounds2iIterator<'a>;
+//
+//     fn into_iter(&self) -> Self::IntoIter {
+//         Bounds2iIterator {
+//             point: Point2::new(self.p_min.x - 1, self.p_min.y),
+//             bounds: &self,
+//         }
+//     }
+// }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bounds2f {
@@ -236,7 +242,7 @@ impl Bounds2f {
         &self.p_max - &self.p_min
     }
 
-    pub fn surface_area(&self) -> Float {
+    pub fn area(&self) -> Float {
         let d = self.diagonal();
         d.x * d.y
     }
